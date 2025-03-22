@@ -5,55 +5,74 @@ import { AuthenticatedRequest } from '../middleware/auth.middleware';
 import mongoose from 'mongoose';
 
 // יצירת פוסט חדש
-export const createPost = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
-  const { restaurantName, text, rating, images } = req.body;
-
-  try {
-    const newPost = await Post.create({
-      userId: req.userId,
-      restaurantName,
-      text,
-      rating,
-      images
-    });
-
-    res.status(201).json(newPost);
-  } catch (err) {
-    console.error('❌ Error creating post:', err);
-    res.status(500).json({ message: 'Server error' });
-  }
-};
-
-// עדכון פוסט
-export const updatePost = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
-  const { id } = req.params;
-  const { restaurantName, text, rating, images } = req.body;
-
-  try {
-    const post = await Post.findById(id);
-    if (!post) {
-      res.status(404).json({ message: 'Post not found' });
-      return;
+export const createPost = async (
+    req: AuthenticatedRequest,
+    res: Response
+  ): Promise<void> => {
+    const { restaurantName, text, rating } = req.body;
+  
+    try {
+      const userId = req.userId;
+      if (!userId) {
+        res.status(401).json({ message: 'Unauthorized' });
+        return;
+      }
+  
+      // קבלת תמונה אם נשלחה
+      const imageUrl = req.file ? `/uploads/${req.file.filename}` : '';
+  
+      const newPost = await Post.create({
+        userId,
+        restaurantName,
+        text,
+        rating,
+        images: imageUrl ? [imageUrl] : []
+      });
+  
+      res.status(201).json(newPost);
+    } catch (err) {
+      console.error('❌ Error creating post:', err);
+      res.status(500).json({ message: 'Server error' });
     }
+  };
+  
 
-    // בדוק אם המשתמש הוא הבעלים של הפוסט
-    if (post.userId.toString() !== req.userId) {
-      res.status(403).json({ message: 'You can only edit your own posts' });
-      return;
+export const updatePost = async (
+    req: AuthenticatedRequest,
+    res: Response
+  ): Promise<void> => {
+    const { id } = req.params;
+    const { restaurantName, text, rating } = req.body;
+  
+    try {
+      const post = await Post.findById(id);
+      if (!post) {
+        res.status(404).json({ message: 'Post not found' });
+        return;
+      }
+  
+      if (post.userId.toString() !== req.userId) {
+        res.status(403).json({ message: 'You can only edit your own posts' });
+        return;
+      }
+  
+      post.restaurantName = restaurantName || post.restaurantName;
+      post.text = text || post.text;
+      post.rating = rating || post.rating;
+  
+      // עדכון תמונה חדשה אם קיימת בקובץ
+      if (req.file) {
+        const imageUrl = `/uploads/${req.file.filename}`;
+        post.images = [imageUrl];
+      }
+  
+      await post.save();
+      res.status(200).json(post);
+    } catch (err) {
+      console.error('❌ Error updating post:', err);
+      res.status(500).json({ message: 'Server error' });
     }
-
-    post.restaurantName = restaurantName;
-    post.text = text;
-    post.rating = rating;
-    post.images = images;
-
-    await post.save();
-    res.status(200).json(post);
-  } catch (err) {
-    console.error('❌ Error updating post:', err);
-    res.status(500).json({ message: 'Server error' });
-  }
-};
+  };
 
 // מחיקת פוסט
 export const deletePost = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
@@ -204,3 +223,4 @@ export const getAllPosts = async (req: AuthenticatedRequest,res: Response): Prom
       res.status(500).json({ message: 'Server error' });
     }
   };
+

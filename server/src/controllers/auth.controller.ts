@@ -3,6 +3,53 @@ import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import User from '../models/User';
 import { generateAccessToken, generateRefreshToken, verifyRefreshToken } from '../config/jwt';
+import { OAuth2Client } from 'google-auth-library';
+
+
+const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
+
+export const googleLogin = async (req: Request, res: Response): Promise<void> => {
+  const { idToken } = req.body;
+
+  try {
+    const ticket = await client.verifyIdToken({
+      idToken,
+      audience: process.env.GOOGLE_CLIENT_ID
+    });
+
+    const payload = ticket.getPayload();
+
+    if (!payload || !payload.email) {
+      res.status(400).json({ message: 'Invalid token' });
+      return;
+    }
+
+    const { sub: googleId, email, name, picture } = payload;
+
+    let user = await User.findOne({ email });
+
+    if (!user) {
+      user = await User.create({
+        googleId,
+        email,
+        username: name,
+        profileImage: picture
+      });
+    }
+    const accessToken = generateAccessToken(user._id.toString());
+    const refreshToken = generateRefreshToken(user._id.toString());
+
+    res.status(200).json({
+      user,
+      accessToken,
+      refreshToken
+    });
+  } catch (err) {
+    console.error('❌ Google login error:', err);
+    res.status(401).json({ message: 'Google authentication failed' });
+  }
+};
+
 
 export const register = async (req: Request, res: Response): Promise<void> => {
   const { username, email, password } = req.body;
@@ -84,4 +131,3 @@ export const login = async (req: Request, res: Response): Promise<void> => {
       res.status(500).json({ message: 'Server error' });
     }
   };
-  

@@ -6,6 +6,8 @@ import authRoutes from './routes/auth.routes';
 import userRoutes from './routes/user.routes';
 import postRoutes from './routes/post.routes';
 import commentRoutes from './routes/comment.routes';
+import swaggerUi from 'swagger-ui-express';
+import swaggerSpec from './swagger';
 
 console.log('authRoutes is:', authRoutes);
 dotenv.config();
@@ -20,6 +22,8 @@ app.use('/api/posts', postRoutes);
 app.use('/api/comments', commentRoutes);
 
 app.use('/uploads', express.static('uploads'));
+
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
 mongoose.connect(process.env.MONGO_URI!)
   .then(() => console.log('Connected to MongoDB'))

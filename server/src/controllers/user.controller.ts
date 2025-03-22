@@ -72,51 +72,18 @@ export const createUser = async (req: Request, res: Response): Promise<void> => 
       return;
     }
   
-    const { firstName, lastName, profileImage } = req.body;
-  
-    try {
-      const updatedUser = await User.findByIdAndUpdate(
-        id,
-        { firstName, lastName, profileImage },
-        { new: true, runValidators: true }
-      ).select('-password');
-  
-      if (!updatedUser) {
-        res.status(404).json({ message: 'User not found' });
-        return;
-      }
-  
-      res.status(200).json(updatedUser);
-    } catch (err) {
-      console.error('❌ Error updating user:', err);
-      res.status(500).json({ message: 'Server error' });
-    }
-  };
-
-  //עדכון תמונת פרופיל
-  export const updateUserProfileWithImage = async (
-    req: AuthenticatedRequest,
-    res: Response
-  ): Promise<void> => {
-    const { id } = req.params;
     const { firstName, lastName } = req.body;
-  
-    if (id !== req.userId) {
-      res.status(403).json({ message: 'You can only edit your own profile' });
-      return;
-    }
+    const imageUrl = req.file ? `/uploads/${req.file.filename}` : undefined;
   
     try {
-      const imageUrl = req.file ? `/uploads/${req.file.filename}` : undefined;
-  
       const updatedUser = await User.findByIdAndUpdate(
         id,
         {
-          firstName,
-          lastName,
+          ...(firstName && { firstName }),
+          ...(lastName && { lastName }),
           ...(imageUrl && { profileImage: imageUrl })
         },
-        { new: true }
+        { new: true, runValidators: true }
       ).select('-password');
   
       if (!updatedUser) {
