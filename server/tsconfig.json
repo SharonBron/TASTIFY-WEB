@@ -112,8 +112,8 @@
         "target": "ES6",
         "module": "CommonJS",
         "outDir": "./dist",
-        "rootDir": "./src",
+        "rootDir": ".",
         "strict": true,
         "esModuleInterop": true,  
-  }
+  },
 }
