@@ -10,6 +10,7 @@ import {
   Typography,
   IconButton,
   Button,
+  Rating,
 } from '@mui/material';
 import AddPhotoAlternateIcon from '@mui/icons-material/AddPhotoAlternate';
 
@@ -19,6 +20,8 @@ const Home: React.FC = () => {
   const [reviews, setReviews] = useState<any[]>([]);
   const [openModal, setOpenModal] = useState(false);
   const [visibleCount, setVisibleCount] = useState(POSTS_PER_PAGE);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [minRating, setMinRating] = useState<number | null>(null);
 
   const handlePostReview = (data: {
     content: string;
@@ -42,9 +45,15 @@ const Home: React.FC = () => {
     setReviews([newReview, ...reviews]);
   };
 
+  const filteredReviews = reviews.filter(review => {
+    const matchesSearch = review.restaurantName.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesRating = minRating ? review.rating >= minRating : true;
+    return matchesSearch && matchesRating;
+  });
+
   return (
     <>
-      <Navbar />
+      <Navbar searchTerm={searchTerm} setSearchTerm={setSearchTerm} />
 
       <Container sx={{ mt: 4 }}>
         {/* Mini "post" box */}
@@ -66,8 +75,18 @@ const Home: React.FC = () => {
           </IconButton>
         </Paper>
 
-        {/* Display visible posts only */}
-        {reviews.slice(0, visibleCount).map((review, index) => (
+        {/* Rating Filter */}
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
+          <Typography>Filter by rating:</Typography>
+          <Rating
+            value={minRating}
+            onChange={(_, newValue) => setMinRating(newValue)}
+          />
+          <Button variant="text" onClick={() => setMinRating(null)}>Clear</Button>
+        </Box>
+
+        {/* Display visible filtered posts only */}
+        {filteredReviews.slice(0, visibleCount).map((review, index) => (
           <ReviewCard
             key={review.id}
             id={review.id}
@@ -84,7 +103,7 @@ const Home: React.FC = () => {
         ))}
 
         {/* Load more button */}
-        {visibleCount < reviews.length && (
+        {visibleCount < filteredReviews.length && (
           <Box textAlign="center" mt={3}>
             <Button variant="outlined" onClick={() => setVisibleCount(prev => prev + POSTS_PER_PAGE)}>
               Load More

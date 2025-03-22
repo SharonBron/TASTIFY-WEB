@@ -10,9 +10,13 @@ import {
 import { Link } from 'react-router-dom';
 import SearchIcon from '@mui/icons-material/Search';
 
-const Navbar: React.FC = () => {
+type NavbarProps = {
+  searchTerm?: string;
+  setSearchTerm?: (term: string) => void;
+};
+
+const Navbar: React.FC<NavbarProps> = ({ searchTerm = '', setSearchTerm }) => {
   const [showSearch, setShowSearch] = useState(false);
-  const [searchTerm, setSearchTerm] = useState('');
 
   const handleSearchClick = () => {
     setShowSearch((prev) => !prev);
@@ -39,7 +43,7 @@ const Navbar: React.FC = () => {
             <InputBase
               placeholder="Search…"
               value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
+              onChange={(e) => setSearchTerm?.(e.target.value)}
               sx={{
                 px: 1,
                 py: 0.5,
@@ -54,7 +58,7 @@ const Navbar: React.FC = () => {
           </IconButton>
         </Box>
 
-        {/* Logo placeholder */}
+        {/* Logo */}
         <Box sx={{ position: 'absolute', left: 20 }}>
           <img src="/logo.png" alt="Logo" style={{ height: '40px' }} />
         </Box>

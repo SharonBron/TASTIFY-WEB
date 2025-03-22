@@ -1,5 +1,11 @@
 import React, { useState } from 'react';
-import { Container, Typography, Button, Box } from '@mui/material';
+import {
+  Container,
+  Typography,
+  Button,
+  Box,
+  Rating,
+} from '@mui/material';
 import { usePosts, Post } from '../context/PostsContext';
 import ReviewCard from '../components/ReviewCard';
 import Navbar from '../components/Navbar';
@@ -10,11 +16,11 @@ const POSTS_PER_PAGE = 5;
 
 const MyPosts: React.FC = () => {
   const { posts, setPosts } = usePosts();
-  const currentUserId = '123'; // ← בעתיד יגיע מ־Auth
+  const currentUserId = '123'; // בעתיד יגיע מ־Auth
 
-  const myPosts = posts.filter(post => post.userId === currentUserId);
   const [visibleCount, setVisibleCount] = useState(POSTS_PER_PAGE);
-
+  const [searchTerm, setSearchTerm] = useState('');
+  const [selectedRating, setSelectedRating] = useState<number | null>(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [selectedPost, setSelectedPost] = useState<Post | null>(null);
 
@@ -55,14 +61,36 @@ const MyPosts: React.FC = () => {
     setSelectedPost(null);
   };
 
+  // סינון לפי שם מסעדה ודירוג (אם נבחר)
+  const myPosts = posts.filter(
+    post =>
+      post.userId === currentUserId &&
+      post.restaurantName.toLowerCase().includes(searchTerm.toLowerCase()) &&
+      (selectedRating === null || post.rating === selectedRating)
+  );
+
   return (
     <>
-      <Navbar />
+      <Navbar searchTerm={searchTerm} setSearchTerm={setSearchTerm} />
       <Container sx={{ mt: 4 }}>
         <Typography variant="h5" gutterBottom>My Posts</Typography>
 
+        {/* ⭐ סינון לפי דירוג */}
+        <Box sx={{ display: 'flex', alignItems: 'center', mb: 2, gap: 2 }}>
+          <Typography>Filter by Rating:</Typography>
+          <Rating
+            value={selectedRating}
+            onChange={(_, newValue) => setSelectedRating(newValue)}
+          />
+          {selectedRating !== null && (
+            <Button size="small" onClick={() => setSelectedRating(null)}>
+              Clear
+            </Button>
+          )}
+        </Box>
+
         {myPosts.length === 0 ? (
-          <Typography>No posts yet.</Typography>
+          <Typography>No posts found.</Typography>
         ) : (
           <>
             {myPosts.slice(0, visibleCount).map(post => (
@@ -97,7 +125,6 @@ const MyPosts: React.FC = () => {
         )}
       </Container>
 
-      {/* Edit Modal */}
       {selectedPost && (
         <AddReviewModal
           open={isEditModalOpen}
