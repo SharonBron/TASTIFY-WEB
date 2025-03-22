@@ -5,6 +5,7 @@ import cors from 'cors';
 import authRoutes from './routes/auth.routes'; 
 import userRoutes from './routes/user.routes';
 import postRoutes from './routes/post.routes';
+import commentRoutes from './routes/comment.routes';
 
 console.log('authRoutes is:', authRoutes);
 dotenv.config();
@@ -16,6 +17,7 @@ app.use(express.json());
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/posts', postRoutes);
+app.use('/api/comments', commentRoutes);
 
 app.get('/ping', (req, res) => {
     res.send('pong');
