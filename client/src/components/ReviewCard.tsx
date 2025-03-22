@@ -8,43 +8,54 @@ import ChatBubbleOutlineIcon from '@mui/icons-material/ChatBubbleOutline';
 import { useNavigate } from 'react-router-dom';
 
 type ReviewCardProps = {
-    id: number;
-    username: string;
-    userImage: string;
-    restaurantImage: string;
-    content: string;
-    rating: number;
-    likes: number;
-    commentsCount: number;
-  };
-  
+  id: number;
+  username: string;
+  userImage: string;
+  restaurantImage: string;
+  restaurantName: string;
+  restaurantLocation: string;
+  content: string;
+  rating: number;
+  likes: number;
+  commentsCount: number;
+};
 
 const ReviewCard: React.FC<ReviewCardProps> = ({
+  id,
   username,
   userImage,
   restaurantImage,
+  restaurantName,
+  restaurantLocation,
   content,
   rating,
+  likes,
+  commentsCount,
 }) => {
   const [liked, setLiked] = useState(false);
-  const [likesCount, setLikesCount] = useState(0);
-  const [commentsCount, setCommentsCount] = useState(0);
-
+  const [likesCount, setLikesCount] = useState<number>(likes || 0);
   const navigate = useNavigate();
 
   const handleLike = () => {
-    if (liked) {
-      setLikesCount((prev) => prev - 1);
-    } else {
-      setLikesCount((prev) => prev + 1);
-    }
+    setLikesCount(prev => liked ? prev - 1 : prev + 1);
     setLiked(!liked);
   };
 
   const handleCommentsClick = () => {
     navigate('/post', {
       state: {
-        post: { username, userImage, restaurantImage, content, rating },
+        post: {
+          id,
+          username,
+          userImage,
+          restaurantImage,
+          restaurantName,
+          restaurantLocation,
+          content,
+          rating,
+          likes,
+          commentsCount
+        },
       },
     });
   };
@@ -54,7 +65,7 @@ const ReviewCard: React.FC<ReviewCardProps> = ({
       <CardHeader
         avatar={<Avatar src={userImage} />}
         title={username}
-        subheader={`Rating: ${rating} stars`}
+        subheader={`${restaurantName} • ${restaurantLocation}`}
       />
       <CardMedia
         component="img"

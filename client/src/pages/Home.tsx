@@ -20,13 +20,24 @@ const Home: React.FC = () => {
   const [openModal, setOpenModal] = useState(false);
   const [visibleCount, setVisibleCount] = useState(POSTS_PER_PAGE);
 
-  const handlePostReview = (data: { content: string; rating: number; image?: string }) => {
+  const handlePostReview = (data: {
+    content: string;
+    rating: number;
+    image?: string;
+    restaurantName: string;
+    restaurantLocation: string;
+  }) => {
     const newReview = {
+      id: Date.now(),
       username: 'Current User',
       userImage: 'https://randomuser.me/api/portraits/lego/1.jpg',
       restaurantImage: data.image || '',
       content: data.content,
       rating: data.rating,
+      restaurantName: data.restaurantName,
+      restaurantLocation: data.restaurantLocation,
+      likes: 0,
+      comments: [],
     };
     setReviews([newReview, ...reviews]);
   };
@@ -49,7 +60,7 @@ const Home: React.FC = () => {
             mb: 4,
           }}
         >
-          <Typography color="text.secondary">What's on your mind?</Typography>
+          <Typography color="text.secondary">Add your review</Typography>
           <IconButton>
             <AddPhotoAlternateIcon />
           </IconButton>
@@ -57,7 +68,19 @@ const Home: React.FC = () => {
 
         {/* Display visible posts only */}
         {reviews.slice(0, visibleCount).map((review, index) => (
-          <ReviewCard key={index} {...review} />
+          <ReviewCard
+            key={review.id}
+            id={review.id}
+            username={review.username}
+            userImage={review.userImage}
+            restaurantImage={review.restaurantImage}
+            restaurantName={review.restaurantName}
+            restaurantLocation={review.restaurantLocation}
+            content={review.content}
+            rating={review.rating}
+            likes={review.likes}
+            commentsCount={review.comments.length}
+          />
         ))}
 
         {/* Load more button */}

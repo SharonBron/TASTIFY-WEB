@@ -11,12 +11,15 @@ export type Post = {
     username: string;
     userImage: string;
     restaurantImage: string;
+    restaurantName: string;
+    restaurantLocation: string;
     content: string;
     rating: number;
     likes: number;
     comments: Comment[];
-    userId: string; 
+    userId: string;
   };
+  
   
 
 type PostsContextType = {

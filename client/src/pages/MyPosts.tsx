@@ -45,6 +45,8 @@ const MyPosts: React.FC = () => {
                   rating={post.rating}
                   likes={post.likes}
                   commentsCount={post.comments.length}
+                  restaurantName={post.restaurantName}
+                  restaurantLocation={post.restaurantLocation}
                 />
                 <Box sx={{ display: 'flex', gap: 2, justifyContent: 'center', mt: 1 }}>
                   <Button variant="outlined" color="primary" onClick={() => handleEdit(post.id)}>Edit</Button>

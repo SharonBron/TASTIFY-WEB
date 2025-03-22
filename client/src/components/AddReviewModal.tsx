@@ -14,13 +14,21 @@ import AddPhotoAlternateIcon from '@mui/icons-material/AddPhotoAlternate';
 type Props = {
   open: boolean;
   onClose: () => void;
-  onSubmit: (data: { content: string; rating: number; image?: string }) => void;
+  onSubmit: (data: {
+    content: string;
+    rating: number;
+    image?: string;
+    restaurantName: string;
+    restaurantLocation: string;
+  }) => void;
 };
 
 const AddReviewModal: React.FC<Props> = ({ open, onClose, onSubmit }) => {
   const [content, setContent] = useState('');
   const [rating, setRating] = useState<number | null>(0);
   const [image, setImage] = useState<string | null>(null);
+  const [restaurantName, setRestaurantName] = useState('');
+  const [restaurantLocation, setRestaurantLocation] = useState('');
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -34,10 +42,18 @@ const AddReviewModal: React.FC<Props> = ({ open, onClose, onSubmit }) => {
   };
 
   const handlePost = () => {
-    onSubmit({ content, rating: rating || 0, image: image || undefined });
+    onSubmit({
+      content,
+      rating: rating || 0,
+      image: image || undefined,
+      restaurantName,
+      restaurantLocation,
+    });
     setContent('');
     setRating(0);
     setImage(null);
+    setRestaurantName('');
+    setRestaurantLocation('');
     onClose();
   };
 
@@ -53,15 +69,27 @@ const AddReviewModal: React.FC<Props> = ({ open, onClose, onSubmit }) => {
         boxShadow: 24,
         position: 'relative',
       }}>
-        {/* Top bar */}
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <Button onClick={handlePost}>Post</Button>
-          <IconButton onClick={onClose}>
-            <CloseIcon />
-          </IconButton>
+          <IconButton onClick={onClose}><CloseIcon /></IconButton>
         </Box>
 
         <Typography variant="h6" sx={{ mt: 1, mb: 2 }}>Create a Review</Typography>
+
+        <TextField
+          label="Restaurant Name"
+          fullWidth
+          sx={{ mb: 2 }}
+          value={restaurantName}
+          onChange={(e) => setRestaurantName(e.target.value)}
+        />
+        <TextField
+          label="Restaurant Location"
+          fullWidth
+          sx={{ mb: 2 }}
+          value={restaurantLocation}
+          onChange={(e) => setRestaurantLocation(e.target.value)}
+        />
 
         <TextField
           placeholder="Write your review..."
