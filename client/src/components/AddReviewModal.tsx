@@ -21,14 +21,21 @@ type Props = {
     restaurantName: string;
     restaurantLocation: string;
   }) => void;
+  defaultValues?: {
+    content: string;
+    rating: number;
+    image?: string;
+    restaurantName: string;
+    restaurantLocation: string;
+  };
 };
 
-const AddReviewModal: React.FC<Props> = ({ open, onClose, onSubmit }) => {
-  const [content, setContent] = useState('');
-  const [rating, setRating] = useState<number | null>(0);
-  const [image, setImage] = useState<string | null>(null);
-  const [restaurantName, setRestaurantName] = useState('');
-  const [restaurantLocation, setRestaurantLocation] = useState('');
+const AddReviewModal: React.FC<Props> = ({ open, onClose, onSubmit, defaultValues }) => {
+  const [content, setContent] = useState(defaultValues?.content || '');
+  const [rating, setRating] = useState<number | null>(defaultValues?.rating || 0);
+  const [image, setImage] = useState<string | null>(defaultValues?.image || null);
+  const [restaurantName, setRestaurantName] = useState(defaultValues?.restaurantName || '');
+  const [restaurantLocation, setRestaurantLocation] = useState(defaultValues?.restaurantLocation || '');
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -61,10 +68,12 @@ const AddReviewModal: React.FC<Props> = ({ open, onClose, onSubmit }) => {
     <Modal open={open} onClose={onClose}>
       <Box sx={{
         maxWidth: 500,
+        maxHeight: '90vh', // ✅ הגבלת גובה
+        overflowY: 'auto', // ✅ גלילה בעת הצורך
         bgcolor: 'white',
         p: 2,
         mx: 'auto',
-        mt: '10vh',
+        mt: '5vh',
         borderRadius: 2,
         boxShadow: 24,
         position: 'relative',
