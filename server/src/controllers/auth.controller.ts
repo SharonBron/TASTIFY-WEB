@@ -52,7 +52,7 @@ export const googleLogin = async (req: Request, res: Response): Promise<void> =>
 
 
 export const register = async (req: Request, res: Response): Promise<void> => {
-  const { username, email, password } = req.body;
+  const { username, email, password, firstName, lastName } = req.body;
   try {
     const existing = await User.findOne({ email });
     if (existing) {
@@ -61,14 +61,19 @@ export const register = async (req: Request, res: Response): Promise<void> => {
     }
 
     const hashed = await bcrypt.hash(password, 10);
-    const user = await User.create({ username, email, password: hashed });
+    console.log('req.body', req.body)
+    const user = await User.create({ username, email, password: hashed, firstName, lastName });
 
     const accessToken = generateAccessToken(user._id.toString());
-    const refreshToken = generateRefreshToken(user._id.toString()); res.status(201).json({ user, accessToken, refreshToken });
+    const refreshToken = generateRefreshToken(user._id.toString());
+
+    res.status(201).json({ user, accessToken, refreshToken });
   } catch (err) {
+    console.error('❌ Error in register:', err);
     res.status(500).json({ msg: 'Server error' });
   }
 };
+
 
 export const login = async (req: Request, res: Response): Promise<void> => {
     const { email, password } = req.body;
