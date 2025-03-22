@@ -8,10 +8,18 @@ import {
   TextField,
   Button,
   Divider,
-  Paper
+  IconButton,
+  Paper,
 } from '@mui/material';
+import DeleteIcon from '@mui/icons-material/Delete';
+import EditIcon from '@mui/icons-material/Edit';
+import FavoriteIcon from '@mui/icons-material/Favorite';
+import ChatBubbleOutlineIcon from '@mui/icons-material/ChatBubbleOutline';
+import Navbar from '../components/Navbar';
+import Footer from '../components/Footer';
 
 type Comment = {
+  id: number;
   user: string;
   text: string;
 };
@@ -21,13 +29,52 @@ const PostDetails: React.FC = () => {
   const navigate = useNavigate();
   const post = location.state?.post;
 
+  const currentUser = 'Yael Reifman'; // בעתיד - מתוך Auth
+
   const [comments, setComments] = useState<Comment[]>([]);
   const [newComment, setNewComment] = useState('');
+  const [editingCommentId, setEditingCommentId] = useState<number | null>(null);
+  const [editedText, setEditedText] = useState('');
+  const [likes, setLikes] = useState(post?.likes ?? 0);
+  const [liked, setLiked] = useState(false);
 
   const handleAddComment = () => {
     if (newComment.trim() === '') return;
-    setComments([...comments, { user: 'Current User', text: newComment }]);
+    const newCommentObj: Comment = {
+      id: Date.now(),
+      user: currentUser,
+      text: newComment,
+    };
+    setComments([...comments, newCommentObj]);
     setNewComment('');
+  };
+
+  const handleDeleteComment = (id: number) => {
+    setComments(comments.filter((comment) => comment.id !== id));
+  };
+
+  const handleEditComment = (id: number, text: string) => {
+    setEditingCommentId(id);
+    setEditedText(text);
+  };
+
+  const handleSaveEdit = () => {
+    setComments((prev) =>
+      prev.map((comment) =>
+        comment.id === editingCommentId ? { ...comment, text: editedText } : comment
+      )
+    );
+    setEditingCommentId(null);
+    setEditedText('');
+  };
+
+  const toggleLike = () => {
+    if (liked) {
+        setLikes((prev: number) => prev - 1);
+    } else {
+        setLikes((prev: number) => prev + 1);
+    }
+    setLiked(!liked);
   };
 
   if (!post) {
@@ -40,43 +87,86 @@ const PostDetails: React.FC = () => {
   }
 
   return (
-    <Container sx={{ mt: 4 }}>
-      <Paper sx={{ p: 3, borderRadius: 2, mb: 4 }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-          <Avatar src={post.userImage} />
-          <Typography variant="h6">{post.username}</Typography>
+    <>
+      <Navbar />
+
+      <Container sx={{ mt: 4 }}>
+        <Paper sx={{ p: 3, borderRadius: 2, mb: 4 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+            <Avatar src={post.userImage} />
+            <Typography variant="h6">{post.username}</Typography>
+          </Box>
+
+          <Box sx={{ mt: 2 }}>
+            {post.restaurantImage && (
+              <img src={post.restaurantImage} alt="Post" style={{ maxWidth: '100%', borderRadius: 8 }} />
+            )}
+            <Typography sx={{ mt: 2 }}>{post.content}</Typography>
+          </Box>
+        </Paper>
+
+        {/* ❤️💬 Likes and Comments Count with Like Button */}
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+            <IconButton onClick={toggleLike}>
+              <FavoriteIcon color={liked ? 'error' : 'disabled'} />
+            </IconButton>
+            <Typography variant="body2">{likes}</Typography>
+          </Box>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+            <ChatBubbleOutlineIcon fontSize="small" />
+            <Typography variant="body2">{comments.length}</Typography>
+          </Box>
         </Box>
 
-        <Box sx={{ mt: 2 }}>
-          {post.restaurantImage && (
-            <img src={post.restaurantImage} alt="Post" style={{ maxWidth: '100%', borderRadius: 8 }} />
-          )}
-          <Typography sx={{ mt: 2 }}>{post.content}</Typography>
-        </Box>
-      </Paper>
+        <Typography variant="h6" gutterBottom>Comments</Typography>
+        <Divider sx={{ mb: 2 }} />
 
-      <Typography variant="h6" gutterBottom>Comments</Typography>
-      <Divider sx={{ mb: 2 }} />
+        {comments.map((comment) => (
+          <Box key={comment.id} sx={{ mb: 2, p: 2, bgcolor: '#f9f9f9', borderRadius: 1 }}>
+            <Typography variant="subtitle2">{comment.user}</Typography>
+            {editingCommentId === comment.id ? (
+              <>
+                <TextField
+                  fullWidth
+                  value={editedText}
+                  onChange={(e) => setEditedText(e.target.value)}
+                  sx={{ mt: 1, mb: 1 }}
+                />
+                <Button onClick={handleSaveEdit} size="small">Save</Button>
+              </>
+            ) : (
+              <Typography variant="body2" sx={{ mt: 1 }}>{comment.text}</Typography>
+            )}
 
-      {comments.map((comment, index) => (
-        <Box key={index} sx={{ mb: 2, p: 2, bgcolor: '#f9f9f9', borderRadius: 1 }}>
-          <Typography variant="subtitle2">{comment.user}</Typography>
-          <Typography variant="body2">{comment.text}</Typography>
-        </Box>
-      ))}
+            {comment.user === currentUser && editingCommentId !== comment.id && (
+              <Box sx={{ display: 'flex', gap: 1, mt: 1 }}>
+                <IconButton size="small" onClick={() => handleEditComment(comment.id, comment.text)}>
+                  <EditIcon fontSize="small" />
+                </IconButton>
+                <IconButton size="small" onClick={() => handleDeleteComment(comment.id)}>
+                  <DeleteIcon fontSize="small" />
+                </IconButton>
+              </Box>
+            )}
+          </Box>
+        ))}
 
-      <TextField
-        fullWidth
-        label="Add a comment..."
-        variant="outlined"
-        value={newComment}
-        onChange={(e) => setNewComment(e.target.value)}
-        multiline
-        rows={2}
-        sx={{ mb: 2 }}
-      />
-      <Button variant="contained" onClick={handleAddComment}>Post Comment</Button>
-    </Container>
+        <TextField
+          fullWidth
+          label="Add a comment..."
+          variant="outlined"
+          value={newComment}
+          onChange={(e) => setNewComment(e.target.value)}
+          multiline
+          rows={2}
+          sx={{ mb: 2 }}
+        />
+        <Button variant="contained" onClick={handleAddComment}>Post Comment</Button>
+      </Container>
+
+      <Footer />
+    </>
   );
 };
 

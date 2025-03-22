@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import {
   Card, CardHeader, CardMedia, CardContent, CardActions,
-  Avatar, IconButton, Typography, Rating, Tooltip
+  Avatar, IconButton, Typography, Rating, Tooltip, Box
 } from '@mui/material';
 import FavoriteIcon from '@mui/icons-material/Favorite';
 import ChatBubbleOutlineIcon from '@mui/icons-material/ChatBubbleOutline';
@@ -23,7 +23,19 @@ const ReviewCard: React.FC<ReviewCardProps> = ({
   rating,
 }) => {
   const [liked, setLiked] = useState(false);
+  const [likesCount, setLikesCount] = useState(0);
+  const [commentsCount, setCommentsCount] = useState(0);
+
   const navigate = useNavigate();
+
+  const handleLike = () => {
+    if (liked) {
+      setLikesCount((prev) => prev - 1);
+    } else {
+      setLikesCount((prev) => prev + 1);
+    }
+    setLiked(!liked);
+  };
 
   const handleCommentsClick = () => {
     navigate('/post', {
@@ -52,17 +64,24 @@ const ReviewCard: React.FC<ReviewCardProps> = ({
         </Typography>
         <Rating value={rating} precision={0.5} readOnly sx={{ mt: 1 }} />
       </CardContent>
-      <CardActions disableSpacing>
+      <CardActions disableSpacing sx={{ px: 2 }}>
         <Tooltip title="Like">
-          <IconButton onClick={() => setLiked(!liked)} color={liked ? 'error' : 'default'}>
+          <IconButton onClick={handleLike} color={liked ? 'error' : 'default'}>
             <FavoriteIcon />
           </IconButton>
         </Tooltip>
+        <Typography variant="body2" sx={{ mr: 2 }}>
+          {likesCount}
+        </Typography>
+
         <Tooltip title="Comments">
           <IconButton onClick={handleCommentsClick}>
             <ChatBubbleOutlineIcon />
           </IconButton>
         </Tooltip>
+        <Typography variant="body2">
+          {commentsCount}
+        </Typography>
       </CardActions>
     </Card>
   );
