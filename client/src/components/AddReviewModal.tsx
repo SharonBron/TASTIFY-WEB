@@ -7,9 +7,13 @@ import {
   IconButton,
   Button,
   Rating,
+  CircularProgress,
 } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
 import AddPhotoAlternateIcon from '@mui/icons-material/AddPhotoAlternate';
+import axios from 'axios';
+
+const GEMINI_API_KEY = process.env.REACT_APP_GEMINI_API_KEY;
 
 type Props = {
   open: boolean;
@@ -36,6 +40,7 @@ const AddReviewModal: React.FC<Props> = ({ open, onClose, onSubmit, defaultValue
   const [image, setImage] = useState<string | null>(defaultValues?.image || null);
   const [restaurantName, setRestaurantName] = useState(defaultValues?.restaurantName || '');
   const [restaurantLocation, setRestaurantLocation] = useState(defaultValues?.restaurantLocation || '');
+  const [loadingSuggestion, setLoadingSuggestion] = useState(false);
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -64,12 +69,42 @@ const AddReviewModal: React.FC<Props> = ({ open, onClose, onSubmit, defaultValue
     onClose();
   };
 
+  const handleAutoSuggest = async () => {
+    setLoadingSuggestion(true);
+    try {
+      const prompt = `תן לי ביקורת מסעדה קצרה ומושקעת על מסעדה בשם ${restaurantName || 'כלשהי'} בדירוג של ${rating || '5'} כוכבים.`;
+
+      const response = await axios.post(
+        'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent',
+        {
+          contents: [{ parts: [{ text: prompt }] }],
+        },
+        {
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          params: {
+            key: GEMINI_API_KEY,
+          },
+        }
+      );
+
+      const suggestion = response.data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+      setContent(suggestion);
+    } catch (error) {
+      console.error('שגיאה בקבלת טקסט מוצע:', error);
+      alert('אירעה שגיאה בעת יצירת ביקורת מוצעת.');
+    } finally {
+      setLoadingSuggestion(false);
+    }
+  };
+
   return (
     <Modal open={open} onClose={onClose}>
       <Box sx={{
         maxWidth: 500,
-        maxHeight: '90vh', // ✅ הגבלת גובה
-        overflowY: 'auto', // ✅ גלילה בעת הצורך
+        maxHeight: '90vh',
+        overflowY: 'auto',
         bgcolor: 'white',
         p: 2,
         mx: 'auto',
@@ -133,6 +168,16 @@ const AddReviewModal: React.FC<Props> = ({ open, onClose, onSubmit, defaultValue
             <img src={image} alt="Preview" style={{ maxWidth: '100%', borderRadius: 8 }} />
           </Box>
         )}
+
+        <Button
+          onClick={handleAutoSuggest}
+          variant="outlined"
+          color="secondary"
+          sx={{ mt: 3 }}
+          disabled={loadingSuggestion}
+        >
+          {loadingSuggestion ? <CircularProgress size={20} /> : 'רוצה שנציע לך ניסוח אוטומטי?'}
+        </Button>
       </Box>
     </Modal>
   );
