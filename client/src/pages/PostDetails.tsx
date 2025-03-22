@@ -25,6 +25,8 @@ type Comment = {
   text: string;
 };
 
+const COMMENTS_PER_PAGE = 3;
+
 const PostDetails: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
@@ -33,6 +35,7 @@ const PostDetails: React.FC = () => {
   const currentUser = 'Yael Reifman';
 
   const [comments, setComments] = useState<Comment[]>([]);
+  const [visibleCount, setVisibleCount] = useState(COMMENTS_PER_PAGE);
   const [newComment, setNewComment] = useState('');
   const [editingCommentId, setEditingCommentId] = useState<number | null>(null);
   const [editedText, setEditedText] = useState('');
@@ -70,11 +73,7 @@ const PostDetails: React.FC = () => {
   };
 
   const toggleLike = () => {
-    if (liked) {
-      setLikes((prev: number) => prev - 1);
-    } else {
-      setLikes((prev: number) => prev + 1);
-    }
+    setLikes((prev: number) => (liked ? prev - 1 : prev + 1));
     setLiked(!liked);
   };
 
@@ -91,7 +90,6 @@ const PostDetails: React.FC = () => {
     <>
       <Navbar />
 
-      {/* כפתור סגירה בצד ימין למעלה */}
       <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 2, mr: 2 }}>
         <IconButton onClick={() => navigate('/home')}>
           <CloseIcon />
@@ -113,7 +111,6 @@ const PostDetails: React.FC = () => {
           </Box>
         </Paper>
 
-        {/* ❤️💬 Likes and Comments Count with Like Button */}
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
             <IconButton onClick={toggleLike}>
@@ -130,7 +127,7 @@ const PostDetails: React.FC = () => {
         <Typography variant="h6" gutterBottom>Comments</Typography>
         <Divider sx={{ mb: 2 }} />
 
-        {comments.map((comment) => (
+        {comments.slice(0, visibleCount).map((comment) => (
           <Box key={comment.id} sx={{ mb: 2, p: 2, bgcolor: '#f9f9f9', borderRadius: 1 }}>
             <Typography variant="subtitle2">{comment.user}</Typography>
             {editingCommentId === comment.id ? (
@@ -159,6 +156,17 @@ const PostDetails: React.FC = () => {
             )}
           </Box>
         ))}
+
+        {/* Load more button */}
+        {visibleCount < comments.length && (
+          <Button
+            onClick={() => setVisibleCount((prev) => prev + COMMENTS_PER_PAGE)}
+            variant="text"
+            sx={{ mb: 2 }}
+          >
+            Load more comments
+          </Button>
+        )}
 
         <TextField
           fullWidth

@@ -5,6 +5,7 @@ import Register from './pages/Auth/Register';
 import Home from './pages/Home';
 import PostDetails from './pages/PostDetails';
 import MyPosts from './pages/MyPosts';
+import Profile from './pages/Profile';
 
 
 const App: React.FC = () => {
@@ -16,6 +17,7 @@ const App: React.FC = () => {
       <Route path="/home" element={<Home />} />
       <Route path="/post" element={<PostDetails />} />
       <Route path="/my-posts" element={<MyPosts />} />
+      <Route path="/profile" element={<Profile />} />
       <Route path="*" element={<div>404 - Page not found</div>} />
     </Routes>
   );
