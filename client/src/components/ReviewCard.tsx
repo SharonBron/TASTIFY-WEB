@@ -8,12 +8,16 @@ import ChatBubbleOutlineIcon from '@mui/icons-material/ChatBubbleOutline';
 import { useNavigate } from 'react-router-dom';
 
 type ReviewCardProps = {
-  username: string;
-  userImage: string;
-  restaurantImage: string;
-  content: string;
-  rating: number;
-};
+    id: number;
+    username: string;
+    userImage: string;
+    restaurantImage: string;
+    content: string;
+    rating: number;
+    likes: number;
+    commentsCount: number;
+  };
+  
 
 const ReviewCard: React.FC<ReviewCardProps> = ({
   username,

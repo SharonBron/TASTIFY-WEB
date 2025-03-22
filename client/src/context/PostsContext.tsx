@@ -7,15 +7,17 @@ export type Comment = {
 };
 
 export type Post = {
-  id: number;
-  username: string;
-  userImage: string;
-  restaurantImage: string;
-  content: string;
-  rating: number;
-  likes: number;
-  comments: Comment[];
-};
+    id: number;
+    username: string;
+    userImage: string;
+    restaurantImage: string;
+    content: string;
+    rating: number;
+    likes: number;
+    comments: Comment[];
+    userId: string; 
+  };
+  
 
 type PostsContextType = {
   posts: Post[];

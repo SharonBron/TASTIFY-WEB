@@ -28,7 +28,7 @@ const Navbar: React.FC = () => {
         {/* Centered nav links */}
         <Box sx={{ flex: 1, display: 'flex', justifyContent: 'center', gap: 4 }}>
           <Button component={Link} to="/home" color="inherit">Home</Button>
-          <Button component={Link} to="/myposts" color="inherit">My Posts</Button>
+          <Button component={Link} to="/my-posts" color="inherit">My Posts</Button>
           <Button component={Link} to="/profile" color="inherit">Profile</Button>
           <Button component={Link} to="/login" color="inherit">Logout</Button>
         </Box>

@@ -15,6 +15,7 @@ import DeleteIcon from '@mui/icons-material/Delete';
 import EditIcon from '@mui/icons-material/Edit';
 import FavoriteIcon from '@mui/icons-material/Favorite';
 import ChatBubbleOutlineIcon from '@mui/icons-material/ChatBubbleOutline';
+import CloseIcon from '@mui/icons-material/Close';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
 
@@ -29,7 +30,7 @@ const PostDetails: React.FC = () => {
   const navigate = useNavigate();
   const post = location.state?.post;
 
-  const currentUser = 'Yael Reifman'; // בעתיד - מתוך Auth
+  const currentUser = 'Yael Reifman';
 
   const [comments, setComments] = useState<Comment[]>([]);
   const [newComment, setNewComment] = useState('');
@@ -70,9 +71,9 @@ const PostDetails: React.FC = () => {
 
   const toggleLike = () => {
     if (liked) {
-        setLikes((prev: number) => prev - 1);
+      setLikes((prev: number) => prev - 1);
     } else {
-        setLikes((prev: number) => prev + 1);
+      setLikes((prev: number) => prev + 1);
     }
     setLiked(!liked);
   };
@@ -90,7 +91,14 @@ const PostDetails: React.FC = () => {
     <>
       <Navbar />
 
-      <Container sx={{ mt: 4 }}>
+      {/* כפתור סגירה בצד ימין למעלה */}
+      <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 2, mr: 2 }}>
+        <IconButton onClick={() => navigate('/home')}>
+          <CloseIcon />
+        </IconButton>
+      </Box>
+
+      <Container sx={{ mt: 2 }}>
         <Paper sx={{ p: 3, borderRadius: 2, mb: 4 }}>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
             <Avatar src={post.userImage} />
