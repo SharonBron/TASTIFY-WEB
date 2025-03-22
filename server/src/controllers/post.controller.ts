@@ -76,3 +76,42 @@ export const deletePost = async (req: AuthenticatedRequest, res: Response): Prom
     res.status(500).json({ message: 'Server error' });
   }
 };
+
+// קבלת כל הפוסטים
+export const getAllPosts = async (req: AuthenticatedRequest,res: Response): Promise<void> => {
+    try {
+        const { restaurant, userId, page = '1', limit = '10' } = req.query;
+    
+        const filter: any = {};
+    
+        if (restaurant) {
+          filter.restaurantName = { $regex: restaurant, $options: 'i' };
+        }
+    
+        if (userId) {
+          filter.userId = userId;
+        }
+    
+        const pageNum = parseInt(page as string, 10);
+        const limitNum = parseInt(limit as string, 10);
+        const skip = (pageNum - 1) * limitNum;
+    
+        const posts = await Post.find(filter)
+          .sort({ createdAt: -1 })
+          .skip(skip)
+          .limit(limitNum)
+          .populate('userId', 'username profileImage');
+    
+        const total = await Post.countDocuments(filter);
+    
+        res.status(200).json({
+          posts,
+          total,
+          currentPage: pageNum,
+          totalPages: Math.ceil(total / limitNum)
+        });
+      } catch (err) {
+        console.error('❌ Error getting posts:', err);
+        res.status(500).json({ message: 'Server error' });
+      }
+  };
