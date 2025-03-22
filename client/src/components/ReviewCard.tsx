@@ -80,7 +80,7 @@ const ReviewCard: React.FC<ReviewCardProps> = ({
         <Rating value={rating} precision={0.5} readOnly sx={{ mt: 1 }} />
       </CardContent>
       <CardActions disableSpacing sx={{ px: 2 }}>
-        <Tooltip title="Like">
+        <Tooltip title="Likes">
           <IconButton onClick={handleLike} color={liked ? 'error' : 'default'}>
             <FavoriteIcon />
           </IconButton>
