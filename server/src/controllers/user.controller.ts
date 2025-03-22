@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import User from '../models/User';
 import bcrypt from 'bcrypt';
+import { AuthenticatedRequest } from '../middleware/auth.middleware';
 
 console.log(' createUser controller loaded');
 
@@ -38,4 +39,56 @@ export const createUser = async (req: Request, res: Response): Promise<void> => 
     console.log("createUser called");
 
   };
+
+  export const getUserProfile = async (
+    req: Request,
+    res: Response
+  ): Promise<void> => {
+    const { id } = req.params;
   
+    try {
+      const user = await User.findById(id).select('-password');
+      if (!user) {
+        res.status(404).json({ message: 'User not found' });
+        return;
+      }
+  
+      res.status(200).json(user);
+    } catch (err) {
+      console.error('❌ Error getting user:', err);
+      res.status(500).json({ message: 'Server error' });
+    }
+  };
+
+  export const updateUserProfile = async (
+    req: AuthenticatedRequest,
+    res: Response
+  ): Promise<void> => {
+    const { id } = req.params;
+  
+    // ודא שהמשתמש המחובר עורך את עצמו
+    if (id !== req.userId) {
+      res.status(403).json({ message: 'You can only edit your own profile' });
+      return;
+    }
+  
+    const { firstName, lastName, profileImage } = req.body;
+  
+    try {
+      const updatedUser = await User.findByIdAndUpdate(
+        id,
+        { firstName, lastName, profileImage },
+        { new: true, runValidators: true }
+      ).select('-password');
+  
+      if (!updatedUser) {
+        res.status(404).json({ message: 'User not found' });
+        return;
+      }
+  
+      res.status(200).json(updatedUser);
+    } catch (err) {
+      console.error('❌ Error updating user:', err);
+      res.status(500).json({ message: 'Server error' });
+    }
+  };

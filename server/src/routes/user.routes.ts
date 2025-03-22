@@ -1,9 +1,13 @@
 import express from 'express';
-import { createUser } from '../controllers/user.controller';
+import { createUser, getUserProfile, updateUserProfile } from '../controllers/user.controller';
+import { authenticateToken } from '../middleware/auth.middleware';
 
 const router = express.Router();
 
+
+
 router.post('/create', createUser);
-console.log('user.routes loaded');
+router.get('/:id', authenticateToken, getUserProfile);
+router.put('/:id', authenticateToken, updateUserProfile);
 
 export default router;
