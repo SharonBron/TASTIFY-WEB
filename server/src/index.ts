@@ -19,10 +19,7 @@ app.use('/api/users', userRoutes);
 app.use('/api/posts', postRoutes);
 app.use('/api/comments', commentRoutes);
 
-app.get('/ping', (req, res) => {
-    res.send('pong');
-  });
-  
+app.use('/uploads', express.static('uploads'));
 
 mongoose.connect(process.env.MONGO_URI!)
   .then(() => console.log('Connected to MongoDB'))
