@@ -34,7 +34,19 @@ const MyPosts: React.FC = () => {
             Authorization: `Bearer ${token}`,
           },
         });
-        setPosts(response.data.posts);
+
+        const postsWithComments = await Promise.all(
+          response.data.posts.map(async (post: any) => {
+            const commentRes = await axios.get(`${process.env.REACT_APP_API_URL}/comments/post/${post._id}`);
+            return {
+              ...post,
+              commentsCount: commentRes.data.length,
+              likesCount: post.likes?.length || 0,
+            };
+          })
+        );
+
+        setPosts(postsWithComments);
       } catch (error) {
         console.error('Error fetching user posts:', error);
       }
@@ -44,6 +56,25 @@ const MyPosts: React.FC = () => {
       fetchUserPosts();
     }
   }, [currentUserId, setPosts]);
+
+  const handleLike = async (postId: string) => {
+    try {
+      const token = localStorage.getItem('accessToken');
+      await axios.post(`${process.env.REACT_APP_API_URL}/posts/${postId}/like`, {}, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      setPosts(prev =>
+        prev.map(post =>
+          post._id === postId
+            ? { ...post, likesCount: (post.likesCount || 0) + 1 }
+            : post
+        )
+      );
+    } catch (err) {
+      console.error('Failed to like post:', err);
+    }
+  };
 
   const handleDelete = async (id: string) => {
     if (window.confirm('Are you sure you want to delete this post?')) {
@@ -129,20 +160,24 @@ const MyPosts: React.FC = () => {
               const restaurantImage = post.images?.[0]
                 ? `${process.env.REACT_APP_SERVER_URL}${post.images[0]}`
                 : '';
+              const userImage = post.userId?.profileImage?.startsWith('/uploads')
+                ? `${process.env.REACT_APP_SERVER_URL}${post.userId.profileImage}`
+                : post.userId?.profileImage || '';
 
               return (
                 <Box key={post._id} sx={{ position: 'relative', mb: 3 }}>
                   <ReviewCard
                     id={post._id}
                     username={post.userId?.username || 'Unknown'}
-                    userImage={post.userId?.profileImage || ''}
+                    userImage={userImage}
                     restaurantImage={restaurantImage}
                     restaurantName={post.restaurantName}
                     restaurantLocation=""
                     content={post.text}
                     rating={post.rating}
-                    likes={post.likes?.length || 0}
-                    commentsCount={0}
+                    likes={post.likesCount || 0}
+                    commentsCount={post.commentsCount || 0}
+                    onLike={() => handleLike(post._id)}
                   />
                   <Box sx={{ display: 'flex', gap: 2, justifyContent: 'center', mt: 1 }}>
                     <Button variant="outlined" color="primary" onClick={() => handleEdit(post)}>Edit</Button>

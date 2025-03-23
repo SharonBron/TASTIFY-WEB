@@ -19,9 +19,13 @@ const PostDetails: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const post = location.state?.post;
-
+  const fullUserImage = post?.userImage?.startsWith('/uploads')
+  ? `${process.env.REACT_APP_SERVER_URL}${post.userImage}`
+  : post?.userImage;
   const userId = localStorage.getItem('userId');
   const token = localStorage.getItem('accessToken');
+
+
 
   const [comments, setComments] = useState<any[]>([]);
   const [visibleCount, setVisibleCount] = useState(COMMENTS_PER_PAGE);
@@ -30,6 +34,8 @@ const PostDetails: React.FC = () => {
   const [editedText, setEditedText] = useState('');
   const [likes, setLikes] = useState(post?.likes ?? 0);
   const [liked, setLiked] = useState(false);
+  const [currentUser, setCurrentUser] = useState<any>(null);
+
 
   useEffect(() => {
     const fetchComments = async () => {
@@ -50,7 +56,7 @@ const PostDetails: React.FC = () => {
       console.warn('⚠️ Cannot send empty comment or missing postId');
       return;
     }
-
+  
     try {
       const res = await axios.post(
         `${process.env.REACT_APP_API_URL}/comments`,
@@ -65,15 +71,25 @@ const PostDetails: React.FC = () => {
           }
         }
       );
-
-      setComments(prev => [res.data, ...prev]);
+  
+      // נבנה תגובה חדשה עם userId מלא מה-localStorage או מתגובה קודמת
+      const createdComment = {
+        ...res.data,
+        userId: {
+          _id: userId,
+          username: localStorage.getItem('username') || 'You',
+          profileImage: localStorage.getItem('profileImage') || ''
+        }
+      };
+  
+      setComments(prev => [createdComment, ...prev]);
       setNewComment('');
     } catch (err) {
       console.error('❌ Failed to post comment:', err);
       alert('Failed to post comment');
     }
   };
-
+  
   const handleDeleteComment = async (id: string) => {
     try {
       await axios.delete(`${process.env.REACT_APP_API_URL}/comments/${id}`, {
@@ -98,7 +114,12 @@ const PostDetails: React.FC = () => {
         headers: { Authorization: `Bearer ${token}` }
       });
 
-      setComments(prev => prev.map(c => c._id === editingCommentId ? res.data : c));
+      setComments(prev =>
+        prev.map(c =>
+          c._id === editingCommentId ? { ...c, text: editedText } : c
+        )
+      );
+      
       setEditingCommentId(null);
       setEditedText('');
     } catch (err) {
@@ -133,7 +154,7 @@ const PostDetails: React.FC = () => {
       <Container sx={{ mt: 2 }}>
         <Paper sx={{ p: 3, borderRadius: 2, mb: 4 }}>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-            <Avatar src={post.userImage} />
+           <Avatar src={fullUserImage ?? ''} />
             <Typography variant="h6">{post.username}</Typography>
           </Box>
 
@@ -158,39 +179,49 @@ const PostDetails: React.FC = () => {
         <Typography variant="h6" gutterBottom>Comments</Typography>
         <Divider sx={{ mb: 2 }} />
 
-        {comments.slice(0, visibleCount).map(comment => (
-          <Box key={comment._id} sx={{ mb: 2, p: 2, bgcolor: '#f9f9f9', borderRadius: 1 }}>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-              <Avatar src={comment.userId?.profileImage} />
-              <Typography variant="subtitle2">{comment.userId?.username}</Typography>
-            </Box>
+        {comments.slice(0, visibleCount).map(comment => {
+  const commenterImage = comment.userId?.profileImage?.startsWith('/uploads')
+    ? `${process.env.REACT_APP_SERVER_URL}${comment.userId.profileImage}`
+    : comment.userId?.profileImage || '';
 
-            {editingCommentId === comment._id ? (
-              <>
-                <TextField
-                  fullWidth
-                  value={editedText}
-                  onChange={(e) => setEditedText(e.target.value)}
-                  sx={{ mt: 1, mb: 1 }}
-                />
-                <Button onClick={handleSaveEdit} size="small">Save</Button>
-              </>
-            ) : (
-              <Typography variant="body2" sx={{ mt: 1 }}>{comment.text}</Typography>
-            )}
+  return (
+    <Box key={comment._id} sx={{ mb: 2, p: 2, bgcolor: '#f9f9f9', borderRadius: 1 }}>
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+        <Avatar src={commenterImage} />
+        <Typography variant="subtitle2">{comment.userId?.username}</Typography>
+      </Box>
+      <Box sx={{ mt: 1 }}>
+  {editingCommentId === comment._id ? (
+    <>
+      <TextField
+        fullWidth
+        value={editedText}
+        onChange={(e) => setEditedText(e.target.value)}
+        sx={{ mb: 1 }}
+      />
+      <Button onClick={handleSaveEdit} size="small">Save</Button>
+    </>
+  ) : (
+    <>
+      <Typography variant="body2">{comment.text}</Typography>
 
-            {comment.userId?._id === userId && editingCommentId !== comment._id && (
-              <Box sx={{ display: 'flex', gap: 1, mt: 1 }}>
-                <IconButton size="small" onClick={() => handleEditComment(comment._id, comment.text)}>
-                  <EditIcon fontSize="small" />
-                </IconButton>
-                <IconButton size="small" onClick={() => handleDeleteComment(comment._id)}>
-                  <DeleteIcon fontSize="small" />
-                </IconButton>
-              </Box>
-            )}
-          </Box>
-        ))}
+      {comment.userId?._id === userId && (
+        <Box sx={{ display: 'flex', gap: 1, mt: 1 }}>
+          <IconButton size="small" onClick={() => handleEditComment(comment._id, comment.text)}>
+            <EditIcon fontSize="small" />
+          </IconButton>
+          <IconButton size="small" onClick={() => handleDeleteComment(comment._id)}>
+            <DeleteIcon fontSize="small" />
+          </IconButton>
+        </Box>
+      )}
+    </>
+  )}
+</Box>
+    </Box>
+  );
+})}
+
 
         {visibleCount < comments.length && (
           <Button onClick={() => setVisibleCount(prev => prev + COMMENTS_PER_PAGE)} variant="text" sx={{ mb: 2 }}>

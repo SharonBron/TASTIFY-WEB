@@ -124,7 +124,12 @@ const Home: React.FC = () => {
             key={review._id}
             id={review._id}
             username={review.userId.username}
-            userImage={review.userId.profileImage}
+            userImage={
+              review.userId?.profileImage?.startsWith('/uploads')
+                ? `${process.env.REACT_APP_SERVER_URL}${review.userId.profileImage}`
+                : review.userId?.profileImage || ''
+            }
+            
             restaurantImage={
               review.images?.[0]
                 ? `${process.env.REACT_APP_SERVER_URL}${review.images[0]}`

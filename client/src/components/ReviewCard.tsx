@@ -10,7 +10,7 @@ import { useNavigate } from 'react-router-dom';
 export type ReviewCardProps = {
   id: string;
   username: string;
-  userImage?: string;
+  userImage: string;
   restaurantImage?: string;
   restaurantName: string;
   restaurantLocation: string;
@@ -18,6 +18,7 @@ export type ReviewCardProps = {
   rating: number;
   likes: number;
   commentsCount: number;
+  onLike?: () => void; 
 };
 
 const ReviewCard: React.FC<ReviewCardProps> = ({
@@ -31,6 +32,8 @@ const ReviewCard: React.FC<ReviewCardProps> = ({
   rating,
   likes,
   commentsCount,
+  onLike,
+  
 }) => {
   const [liked, setLiked] = useState(false);
   const [likesCount, setLikesCount] = useState<number>(likes || 0);
@@ -87,9 +90,9 @@ const ReviewCard: React.FC<ReviewCardProps> = ({
 
       <CardActions disableSpacing sx={{ px: 2 }}>
         <Tooltip title="Likes">
-          <IconButton onClick={handleLike} color={liked ? 'error' : 'default'}>
-            <FavoriteIcon />
-          </IconButton>
+        <IconButton onClick={onLike ?? handleLike} color={liked ? 'error' : 'default'}>
+  <FavoriteIcon />
+</IconButton>
         </Tooltip>
         <Typography variant="body2" sx={{ mr: 2 }}>
           {likesCount}

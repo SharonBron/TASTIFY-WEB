@@ -99,43 +99,75 @@ export const deletePost = async (req: AuthenticatedRequest, res: Response): Prom
 };
 
 // קבלת כל הפוסטים
-export const getAllPosts = async (req: AuthenticatedRequest,res: Response): Promise<void> => {
-    try {
-        const { restaurant, userId, page = '1', limit = '10' } = req.query;
-    
-        const filter: any = {};
-    
-        if (restaurant) {
-          filter.restaurantName = { $regex: restaurant, $options: 'i' };
+export const getAllPosts = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+  try {
+    const { restaurant, userId, page = '1', limit = '10' } = req.query;
+
+    const pageNum = parseInt(page as string, 10);
+    const limitNum = parseInt(limit as string, 10);
+    const skip = (pageNum - 1) * limitNum;
+
+    const matchStage: any = {};
+
+    if (restaurant) {
+      matchStage.restaurantName = { $regex: restaurant, $options: 'i' };
+    }
+
+    if (userId) {
+      matchStage.userId = new mongoose.Types.ObjectId(userId as string);
+    }
+
+    const posts = await Post.aggregate([
+      { $match: matchStage },
+      { $sort: { createdAt: -1 } },
+      { $skip: skip },
+      { $limit: limitNum },
+      {
+        $lookup: {
+          from: 'comments',
+          localField: '_id',
+          foreignField: 'postId',
+          as: 'comments'
         }
-    
-        if (userId) {
-          filter.userId = userId;
+      },
+      {
+        $addFields: {
+          commentsCount: { $size: '$comments' },
+          likesCount: { $size: '$likes' }
         }
-    
-        const pageNum = parseInt(page as string, 10);
-        const limitNum = parseInt(limit as string, 10);
-        const skip = (pageNum - 1) * limitNum;
-    
-        const posts = await Post.find(filter)
-          .sort({ createdAt: -1 })
-          .skip(skip)
-          .limit(limitNum)
-          .populate('userId', 'username profileImage');
-    
-        const total = await Post.countDocuments(filter);
-    
-        res.status(200).json({
-          posts,
-          total,
-          currentPage: pageNum,
-          totalPages: Math.ceil(total / limitNum)
-        });
-      } catch (err) {
-        console.error('❌ Error getting posts:', err);
-        res.status(500).json({ message: 'Server error' });
+      },
+      {
+        $lookup: {
+          from: 'users',
+          localField: 'userId',
+          foreignField: '_id',
+          as: 'user'
+        }
+      },
+      { $unwind: '$user' },
+      {
+        $project: {
+          comments: 0,
+          likes: 0,
+          'user.password': 0 // הסתרת סיסמה אם יש
+        }
       }
-  };
+    ]);
+
+    // Get total count (without pagination)
+    const total = await Post.countDocuments(matchStage);
+
+    res.status(200).json({
+      posts,
+      total,
+      currentPage: pageNum,
+      totalPages: Math.ceil(total / limitNum)
+    });
+  } catch (err) {
+    console.error('❌ Error getting posts:', err);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
 
 
   export const toggleLikePost = async (
