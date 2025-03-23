@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
 import ReviewCard from '../components/ReviewCard';
@@ -13,39 +13,70 @@ import {
   Rating,
 } from '@mui/material';
 import AddPhotoAlternateIcon from '@mui/icons-material/AddPhotoAlternate';
+import axios from 'axios';
+import { usePosts } from '../context/PostsContext';
 
 const POSTS_PER_PAGE = 5;
 
 const Home: React.FC = () => {
-  const [reviews, setReviews] = useState<any[]>([]);
+  const { posts, setPosts } = usePosts();
   const [openModal, setOpenModal] = useState(false);
   const [visibleCount, setVisibleCount] = useState(POSTS_PER_PAGE);
   const [searchTerm, setSearchTerm] = useState('');
   const [minRating, setMinRating] = useState<number | null>(null);
 
-  const handlePostReview = (data: {
+  useEffect(() => {
+    const fetchPosts = async () => {
+      try {
+        const token = localStorage.getItem('accessToken');
+        const res = await axios.get(`${process.env.REACT_APP_API_URL}/posts`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+        setPosts(res.data.posts);
+      } catch (err) {
+        console.error('❌ Error fetching posts:', err);
+      }
+    };
+
+    fetchPosts();
+  }, [setPosts]);
+
+  const handlePostReview = async (data: {
     content: string;
     rating: number;
     image?: string;
     restaurantName: string;
     restaurantLocation: string;
   }) => {
-    const newReview = {
-      id: Date.now(),
-      username: 'Current User',
-      userImage: 'https://randomuser.me/api/portraits/lego/1.jpg',
-      restaurantImage: data.image || '',
-      content: data.content,
-      rating: data.rating,
-      restaurantName: data.restaurantName,
-      restaurantLocation: data.restaurantLocation,
-      likes: 0,
-      comments: [],
-    };
-    setReviews([newReview, ...reviews]);
+    try {
+      const token = localStorage.getItem('accessToken');
+      const formData = new FormData();
+      formData.append('text', data.content);
+      formData.append('rating', String(data.rating));
+      formData.append('restaurantName', data.restaurantName);
+      if (data.image) {
+        const blob = await fetch(data.image).then(res => res.blob());
+        formData.append('image', blob, 'image.jpg');
+      }
+
+      const res = await axios.post(`${process.env.REACT_APP_API_URL}/posts`, formData, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+
+      setPosts(prev => [res.data, ...prev]);
+      setOpenModal(false);
+    } catch (err) {
+      console.error('❌ Error creating post:', err);
+      alert('Failed to create post');
+    }
   };
 
-  const filteredReviews = reviews.filter(review => {
+  const filteredReviews = posts.filter(review => {
     const matchesSearch = review.restaurantName.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesRating = minRating ? review.rating >= minRating : true;
     return matchesSearch && matchesRating;
@@ -56,7 +87,6 @@ const Home: React.FC = () => {
       <Navbar searchTerm={searchTerm} setSearchTerm={setSearchTerm} />
 
       <Container sx={{ mt: 4 }}>
-        {/* Mini "post" box */}
         <Paper
           onClick={() => setOpenModal(true)}
           sx={{
@@ -75,7 +105,6 @@ const Home: React.FC = () => {
           </IconButton>
         </Paper>
 
-        {/* Rating Filter */}
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
           <Typography>Filter by rating:</Typography>
           <Rating
@@ -85,24 +114,22 @@ const Home: React.FC = () => {
           <Button variant="text" onClick={() => setMinRating(null)}>Clear</Button>
         </Box>
 
-        {/* Display visible filtered posts only */}
-        {filteredReviews.slice(0, visibleCount).map((review, index) => (
+        {filteredReviews.slice(0, visibleCount).map((review) => (
           <ReviewCard
-            key={review.id}
-            id={review.id}
-            username={review.username}
-            userImage={review.userImage}
-            restaurantImage={review.restaurantImage}
+            key={review._id}
+            id={review._id}
+            username={review.userId.username}
+            userImage={review.userId.profileImage}
+            restaurantImage={review.images[0]}
             restaurantName={review.restaurantName}
-            restaurantLocation={review.restaurantLocation}
-            content={review.content}
+            restaurantLocation=""
+            content={review.text}
             rating={review.rating}
-            likes={review.likes}
-            commentsCount={review.comments.length}
+            likes={review.likes.length}
+            commentsCount={0}
           />
         ))}
 
-        {/* Load more button */}
         {visibleCount < filteredReviews.length && (
           <Box textAlign="center" mt={3}>
             <Button variant="outlined" onClick={() => setVisibleCount(prev => prev + POSTS_PER_PAGE)}>

@@ -1,26 +1,19 @@
 import React, { createContext, useState, useContext, ReactNode } from 'react';
 
-export type Comment = {
-  id: number;
-  user: string;
-  text: string;
-};
-
 export type Post = {
-    id: number;
+  _id: string;
+  restaurantName: string;
+  text: string;
+  rating: number;
+  images: string[];
+  likes: string[];
+  userId: {
+    _id: string;
     username: string;
-    userImage: string;
-    restaurantImage: string;
-    restaurantName: string;
-    restaurantLocation: string;
-    content: string;
-    rating: number;
-    likes: number;
-    comments: Comment[];
-    userId: string;
+    profileImage: string;
   };
-  
-  
+  createdAt: string;
+};
 
 type PostsContextType = {
   posts: Post[];
@@ -31,7 +24,7 @@ const PostsContext = createContext<PostsContextType | undefined>(undefined);
 
 export const usePosts = () => {
   const context = useContext(PostsContext);
-  if (!context) throw new Error("usePosts must be used within PostsProvider");
+  if (!context) throw new Error('usePosts must be used within PostsProvider');
   return context;
 };
 

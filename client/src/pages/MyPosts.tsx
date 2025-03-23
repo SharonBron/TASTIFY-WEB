@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   Container,
   Typography,
@@ -6,31 +6,63 @@ import {
   Box,
   Rating,
 } from '@mui/material';
-import { usePosts, Post } from '../context/PostsContext';
+import { usePosts } from '../context/PostsContext';
 import ReviewCard from '../components/ReviewCard';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
 import AddReviewModal from '../components/AddReviewModal';
+import axios from 'axios';
 
 const POSTS_PER_PAGE = 5;
 
 const MyPosts: React.FC = () => {
   const { posts, setPosts } = usePosts();
-  const currentUserId = '123'; // בעתיד יגיע מ־Auth
-
+  const currentUserId = localStorage.getItem('userId');
+  
   const [visibleCount, setVisibleCount] = useState(POSTS_PER_PAGE);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedRating, setSelectedRating] = useState<number | null>(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-  const [selectedPost, setSelectedPost] = useState<Post | null>(null);
+  const [selectedPost, setSelectedPost] = useState<any>(null);
 
-  const handleDelete = (id: number) => {
+  // ✅ טוען פוסטים רק של המשתמש המחובר
+  useEffect(() => {
+    const fetchUserPosts = async () => {
+      try {
+        const token = localStorage.getItem('accessToken');
+        const response = await axios.get(`${process.env.REACT_APP_API_URL}/posts?userId=${currentUserId}`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+        setPosts(response.data.posts);
+      } catch (error) {
+        console.error('Error fetching user posts:', error);
+      }
+    };
+
+    if (currentUserId) {
+      fetchUserPosts();
+    }
+  }, [currentUserId, setPosts]);
+
+  const handleDelete = async (id: string) => {
     if (window.confirm('Are you sure you want to delete this post?')) {
-      setPosts(prev => prev.filter(post => post.id !== id));
+      try {
+        const token = localStorage.getItem('accessToken');
+        await axios.delete(`${process.env.REACT_APP_API_URL}/posts/${id}`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+        setPosts(prev => prev.filter(post => post._id !== id));
+      } catch (err) {
+        console.error('Failed to delete post:', err);
+      }
     }
   };
 
-  const handleEdit = (post: Post) => {
+  const handleEdit = (post: any) => {
     setSelectedPost(post);
     setIsEditModalOpen(true);
   };
@@ -45,14 +77,13 @@ const MyPosts: React.FC = () => {
     if (!selectedPost) return;
     setPosts(prev =>
       prev.map(post =>
-        post.id === selectedPost.id
+        post._id === selectedPost._id
           ? {
               ...post,
-              content: updatedData.content,
+              text: updatedData.content,
               rating: updatedData.rating,
-              restaurantImage: updatedData.image || post.restaurantImage,
+              images: updatedData.image ? [updatedData.image] : post.images,
               restaurantName: updatedData.restaurantName,
-              restaurantLocation: updatedData.restaurantLocation,
             }
           : post
       )
@@ -61,10 +92,9 @@ const MyPosts: React.FC = () => {
     setSelectedPost(null);
   };
 
-  // סינון לפי שם מסעדה ודירוג (אם נבחר)
-  const myPosts = posts.filter(
+  // סינון פוסטים (לא חובה כאן כי כבר הבאנו רק של המשתמש)
+  const filteredPosts = posts.filter(
     post =>
-      post.userId === currentUserId &&
       post.restaurantName.toLowerCase().includes(searchTerm.toLowerCase()) &&
       (selectedRating === null || post.rating === selectedRating)
   );
@@ -75,7 +105,6 @@ const MyPosts: React.FC = () => {
       <Container sx={{ mt: 4 }}>
         <Typography variant="h5" gutterBottom>My Posts</Typography>
 
-        {/* ⭐ סינון לפי דירוג */}
         <Box sx={{ display: 'flex', alignItems: 'center', mb: 2, gap: 2 }}>
           <Typography>Filter by Rating:</Typography>
           <Rating
@@ -89,32 +118,32 @@ const MyPosts: React.FC = () => {
           )}
         </Box>
 
-        {myPosts.length === 0 ? (
+        {filteredPosts.length === 0 ? (
           <Typography>No posts found.</Typography>
         ) : (
           <>
-            {myPosts.slice(0, visibleCount).map(post => (
-              <Box key={post.id} sx={{ position: 'relative', mb: 3 }}>
+            {filteredPosts.slice(0, visibleCount).map(post => (
+              <Box key={post._id} sx={{ position: 'relative', mb: 3 }}>
                 <ReviewCard
-                  id={post.id}
-                  username={post.username}
-                  userImage={post.userImage}
-                  restaurantImage={post.restaurantImage}
+                  id={post._id}
+                  username={post.userId?.username || 'Unknown'}
+                  userImage={post.userId?.profileImage || ''}
+                  restaurantImage={post.images?.[0] || ''}
                   restaurantName={post.restaurantName}
-                  restaurantLocation={post.restaurantLocation}
-                  content={post.content}
+                  restaurantLocation=""
+                  content={post.text}
                   rating={post.rating}
-                  likes={post.likes}
-                  commentsCount={post.comments.length}
+                  likes={post.likes?.length || 0}
+                  commentsCount={0}
                 />
                 <Box sx={{ display: 'flex', gap: 2, justifyContent: 'center', mt: 1 }}>
                   <Button variant="outlined" color="primary" onClick={() => handleEdit(post)}>Edit</Button>
-                  <Button variant="outlined" color="error" onClick={() => handleDelete(post.id)}>Delete</Button>
+                  <Button variant="outlined" color="error" onClick={() => handleDelete(post._id)}>Delete</Button>
                 </Box>
               </Box>
             ))}
 
-            {visibleCount < myPosts.length && (
+            {visibleCount < filteredPosts.length && (
               <Box textAlign="center" mt={3}>
                 <Button variant="outlined" onClick={() => setVisibleCount(prev => prev + POSTS_PER_PAGE)}>
                   Load More
@@ -134,11 +163,11 @@ const MyPosts: React.FC = () => {
           }}
           onSubmit={handleUpdate}
           defaultValues={{
-            content: selectedPost.content,
+            content: selectedPost.text,
             rating: selectedPost.rating,
-            image: selectedPost.restaurantImage,
+            image: selectedPost.images?.[0] || '',
             restaurantName: selectedPost.restaurantName,
-            restaurantLocation: selectedPost.restaurantLocation,
+            restaurantLocation: '',
           }}
         />
       )}

@@ -1,14 +1,14 @@
 import React, { useState } from 'react';
 import {
   Card, CardHeader, CardMedia, CardContent, CardActions,
-  Avatar, IconButton, Typography, Rating, Tooltip, Box
+  Avatar, IconButton, Typography, Rating, Tooltip
 } from '@mui/material';
 import FavoriteIcon from '@mui/icons-material/Favorite';
 import ChatBubbleOutlineIcon from '@mui/icons-material/ChatBubbleOutline';
 import { useNavigate } from 'react-router-dom';
 
-type ReviewCardProps = {
-  id: number;
+export type ReviewCardProps = {
+  id: string; // ✅ היה number - תוקן לפי MongoDB
   username: string;
   userImage: string;
   restaurantImage: string;
