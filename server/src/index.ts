@@ -12,9 +12,11 @@ import swaggerSpec from './swagger';
 console.log('authRoutes is:', authRoutes);
 dotenv.config();
 const app = express();
-app.use(cors());
+app.use(cors({
+  origin: 'http://localhost:3000',
+  credentials: true
+}));
 app.use(express.json());
-
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/posts', postRoutes);
