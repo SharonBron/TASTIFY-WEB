@@ -78,7 +78,7 @@ const Home: React.FC = () => {
 
   const filteredReviews = posts.filter(review => {
     const matchesSearch = review.restaurantName.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesRating = minRating ? review.rating >= minRating : true;
+    const matchesRating = minRating !== null ? review.rating === minRating : true;
     return matchesSearch && matchesRating;
   });
 
