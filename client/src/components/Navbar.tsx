@@ -28,7 +28,19 @@ const Navbar: React.FC<NavbarProps> = ({ searchTerm = '', setSearchTerm }) => {
       elevation={0}
       sx={{ backgroundColor: '#f5f5f5', color: '#000', px: 4 }}
     >
-      <Toolbar sx={{ justifyContent: 'space-between' }}>
+      <Toolbar sx={{ justifyContent: 'space-between', position: 'relative' }}>
+        
+        {/* Logo on the left */}
+        <Box sx={{ position: 'absolute', left: 20, display: 'flex', alignItems: 'center' }}>
+          <Link to="/home">
+            <img
+              src="/images/logo_tastify.png"
+              alt="Tastify Logo"
+              style={{ height: 60, width: 100 }} 
+              />
+          </Link>
+        </Box>
+
         {/* Centered nav links */}
         <Box sx={{ flex: 1, display: 'flex', justifyContent: 'center', gap: 4 }}>
           <Button component={Link} to="/home" color="inherit">Home</Button>
@@ -37,8 +49,8 @@ const Navbar: React.FC<NavbarProps> = ({ searchTerm = '', setSearchTerm }) => {
           <Button component={Link} to="/login" color="inherit">Logout</Button>
         </Box>
 
-        {/* Search icon and input */}
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, position: 'absolute', right: 20 }}>
+        {/* Search icon and input on the right */}
+        <Box sx={{ position: 'absolute', right: 20, display: 'flex', alignItems: 'center', gap: 1 }}>
           {showSearch && (
             <InputBase
               placeholder="Search…"
@@ -58,10 +70,6 @@ const Navbar: React.FC<NavbarProps> = ({ searchTerm = '', setSearchTerm }) => {
           </IconButton>
         </Box>
 
-        {/* Logo */}
-        <Box sx={{ position: 'absolute', left: 20 }}>
-          <img src="/logo.png" alt="Logo" style={{ height: '40px' }} />
-        </Box>
       </Toolbar>
     </AppBar>
   );
