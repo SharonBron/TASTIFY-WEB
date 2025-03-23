@@ -13,7 +13,7 @@ import LockOutlinedIcon from '@mui/icons-material/LockOutlined';
 import { useForm } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
 import * as yup from 'yup';
-import { Link as RouterLink } from 'react-router-dom';
+import { Link as RouterLink, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 
 type FormValues = {
@@ -27,6 +27,8 @@ const schema = yup.object().shape({
 });
 
 const Login: React.FC = () => {
+  const navigate = useNavigate();
+
   const {
     register,
     handleSubmit,
@@ -38,12 +40,9 @@ const Login: React.FC = () => {
   const onSubmit = async (data: FormValues) => {
     try {
       const response = await axios.post(`${process.env.REACT_APP_API_URL}/auth/login`, data);
-      console.log('Login success:', response.data);
-      alert('Login successful!');
-      
-      // לדוגמה: לשמירה מקומית של הטוקנים:
       localStorage.setItem('accessToken', response.data.accessToken);
       localStorage.setItem('refreshToken', response.data.refreshToken);
+      navigate('/home', { replace: true }); // ניווט עם חסימה של "אחורה"
     } catch (error: any) {
       console.error('Login error:', error);
       alert(error.response?.data?.message || 'Login failed.');
@@ -59,31 +58,9 @@ const Login: React.FC = () => {
         <Typography variant="h5" mt={1}>Login</Typography>
 
         <Box component="form" onSubmit={handleSubmit(onSubmit)} sx={{ mt: 2 }}>
-          <TextField
-            fullWidth
-            label="Email"
-            margin="normal"
-            {...register('email')}
-            error={!!errors.email}
-            helperText={errors.email?.message}
-          />
-          <TextField
-            fullWidth
-            label="Password"
-            type="password"
-            margin="normal"
-            {...register('password')}
-            error={!!errors.password}
-            helperText={errors.password?.message}
-          />
-          <Button
-            type="submit"
-            fullWidth
-            variant="contained"
-            sx={{ mt: 3 }}
-          >
-            Login
-          </Button>
+          <TextField fullWidth label="Email" margin="normal" {...register('email')} error={!!errors.email} helperText={errors.email?.message} />
+          <TextField fullWidth label="Password" type="password" margin="normal" {...register('password')} error={!!errors.password} helperText={errors.password?.message} />
+          <Button type="submit" fullWidth variant="contained" sx={{ mt: 3 }}>Login</Button>
 
           <Box textAlign="center" mt={2}>
             <Typography variant="body2">
