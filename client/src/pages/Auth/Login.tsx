@@ -14,6 +14,7 @@ import { useForm } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
 import * as yup from 'yup';
 import { Link as RouterLink } from 'react-router-dom';
+import axios from 'axios';
 
 type FormValues = {
   email: string;
@@ -34,9 +35,19 @@ const Login: React.FC = () => {
     resolver: yupResolver(schema),
   });
 
-  const onSubmit = (data: FormValues) => {
-    console.log('Login Data:', data);
-    // Send to API in the future
+  const onSubmit = async (data: FormValues) => {
+    try {
+      const response = await axios.post(`${process.env.REACT_APP_API_URL}/auth/login`, data);
+      console.log('Login success:', response.data);
+      alert('Login successful!');
+      
+      // לדוגמה: לשמירה מקומית של הטוקנים:
+      localStorage.setItem('accessToken', response.data.accessToken);
+      localStorage.setItem('refreshToken', response.data.refreshToken);
+    } catch (error: any) {
+      console.error('Login error:', error);
+      alert(error.response?.data?.message || 'Login failed.');
+    }
   };
 
   return (

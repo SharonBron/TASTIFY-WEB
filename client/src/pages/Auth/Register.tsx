@@ -14,6 +14,8 @@ import { useForm } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
 import * as yup from 'yup';
 import { Link as RouterLink } from 'react-router-dom';
+import axios from 'axios';
+
 
 type FormValues = {
   email: string;
@@ -40,9 +42,15 @@ const Register: React.FC = () => {
     resolver: yupResolver(schema),
   });
 
-  const onSubmit = (data: FormValues) => {
-    console.log('Register Data:', data);
-    // Submit to backend API
+  const onSubmit = async (data: FormValues) => {
+    try {
+      const response = await axios.post(`${process.env.REACT_APP_API_URL}/auth/register`, data);
+      console.log('User registered:', response.data);
+      alert('Registration successful!');
+    } catch (error: any) {
+      console.error('Registration error:', error);
+      alert(error.response?.data?.msg || 'Registration failed.');
+    }
   };
 
   return (
