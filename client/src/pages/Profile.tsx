@@ -19,46 +19,39 @@ const Profile: React.FC = () => {
 
   useEffect(() => {
     const fetchProfile = async () => {
-      console.log('Fetching user profile...', { userId, token });
-  
-      if (!userId || !token) {
-        console.warn('Missing token or userId');
-        return;
-      }
-  
+      if (!userId || !token) return;
+
       try {
         const res = await axios.get(`${process.env.REACT_APP_API_URL}/users/${userId}`, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
+          headers: { Authorization: `Bearer ${token}` },
         });
-  
-        console.log('✅ User fetched:', res.data);
-  
+
         const user = res.data;
         setFirstName(user.firstName);
         setLastName(user.lastName);
         setEmail(user.email);
+
         if (user.profileImage) {
-          setProfileImage(`${process.env.REACT_APP_API_URL}${user.profileImage}`);
+          const fullUrl = `${process.env.REACT_APP_SERVER_URL}${user.profileImage}`;
+          console.log('🖼️ Profile image on load:', fullUrl);
+          setProfileImage(fullUrl);
         }
       } catch (err) {
         console.error('❌ Failed to fetch user profile:', err);
       }
     };
-  
+
     fetchProfile();
   }, [userId, token]);
-  
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) {
-      setSelectedFile(file);
-      const reader = new FileReader();
-      reader.onloadend = () => setProfileImage(reader.result as string);
-      reader.readAsDataURL(file);
-    }
+  if (file) {
+    setSelectedFile(file);
+
+    const previewUrl = URL.createObjectURL(file);
+    setProfileImage(previewUrl);
+  }
   };
 
   const handleSave = async () => {
@@ -68,7 +61,7 @@ const Profile: React.FC = () => {
     formData.append('firstName', firstName);
     formData.append('lastName', lastName);
     if (selectedFile) {
-      formData.append('image', selectedFile);
+      formData.append('profileImage', selectedFile);
     }
 
     try {
@@ -78,11 +71,17 @@ const Profile: React.FC = () => {
           'Content-Type': 'multipart/form-data',
         },
       });
+
       const updatedUser = res.data;
       alert('Profile updated successfully!');
+
       if (updatedUser.profileImage) {
-        setProfileImage(`${process.env.REACT_APP_API_URL}${updatedUser.profileImage}`);
+        const fullUrl = `${process.env.REACT_APP_SERVER_URL}${updatedUser.profileImage}`;
+        console.log('🖼️ Updated image URL:', fullUrl);
+        setProfileImage(fullUrl);
       }
+
+      setSelectedFile(null);
     } catch (err) {
       console.error('❌ Failed to update profile:', err);
       alert('Failed to update profile.');
@@ -97,7 +96,12 @@ const Profile: React.FC = () => {
         <Typography variant="h5" gutterBottom>My Profile</Typography>
 
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 3 }}>
-          <Avatar src={profileImage ?? ''} sx={{ width: 80, height: 80 }} />
+          <Avatar
+            src={profileImage ?? ''}
+            alt="Profile"
+            sx={{ width: 80, height: 80 }}
+            onError={() => console.error('❌ Failed to load image:', profileImage)}
+          />
           <label htmlFor="upload-photo">
             <input
               accept="image/*"

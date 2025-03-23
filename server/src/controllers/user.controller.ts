@@ -81,7 +81,7 @@ export const createUser = async (req: Request, res: Response): Promise<void> => 
         {
           ...(firstName && { firstName }),
           ...(lastName && { lastName }),
-          ...(imageUrl && { profileImage: imageUrl })
+          ...(imageUrl && { profileImage: imageUrl }),
         },
         { new: true, runValidators: true }
       ).select('-password');

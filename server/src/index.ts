@@ -8,6 +8,7 @@ import postRoutes from './routes/post.routes';
 import commentRoutes from './routes/comment.routes';
 import swaggerUi from 'swagger-ui-express';
 import swaggerSpec from './swagger';
+import path from 'path';
 
 console.log('authRoutes is:', authRoutes);
 dotenv.config();
@@ -22,7 +23,9 @@ app.use('/api/users', userRoutes);
 app.use('/api/posts', postRoutes);
 app.use('/api/comments', commentRoutes);
 
-app.use('/uploads', express.static('uploads'));
+//app.use('/uploads', express.static('uploads'));
+app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')));
+
 
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
