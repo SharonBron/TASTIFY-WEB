@@ -18,14 +18,13 @@ const POSTS_PER_PAGE = 5;
 const MyPosts: React.FC = () => {
   const { posts, setPosts } = usePosts();
   const currentUserId = localStorage.getItem('userId');
-  
+
   const [visibleCount, setVisibleCount] = useState(POSTS_PER_PAGE);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedRating, setSelectedRating] = useState<number | null>(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [selectedPost, setSelectedPost] = useState<any>(null);
 
-  // ✅ טוען פוסטים רק של המשתמש המחובר
   useEffect(() => {
     const fetchUserPosts = async () => {
       try {
@@ -70,11 +69,12 @@ const MyPosts: React.FC = () => {
   const handleUpdate = (updatedData: {
     content: string;
     rating: number;
-    image?: string;
+    imageUrl?: string;
     restaurantName: string;
     restaurantLocation: string;
   }) => {
     if (!selectedPost) return;
+
     setPosts(prev =>
       prev.map(post =>
         post._id === selectedPost._id
@@ -82,17 +82,19 @@ const MyPosts: React.FC = () => {
               ...post,
               text: updatedData.content,
               rating: updatedData.rating,
-              images: updatedData.image ? [updatedData.image] : post.images,
+              images: updatedData.imageUrl
+                ? [updatedData.imageUrl.replace(process.env.REACT_APP_SERVER_URL || '', '')]
+                : post.images,
               restaurantName: updatedData.restaurantName,
             }
           : post
       )
     );
+
     setIsEditModalOpen(false);
     setSelectedPost(null);
   };
 
-  // סינון פוסטים (לא חובה כאן כי כבר הבאנו רק של המשתמש)
   const filteredPosts = posts.filter(
     post =>
       post.restaurantName.toLowerCase().includes(searchTerm.toLowerCase()) &&
@@ -102,6 +104,7 @@ const MyPosts: React.FC = () => {
   return (
     <>
       <Navbar searchTerm={searchTerm} setSearchTerm={setSearchTerm} />
+
       <Container sx={{ mt: 4 }}>
         <Typography variant="h5" gutterBottom>My Posts</Typography>
 
@@ -122,26 +125,32 @@ const MyPosts: React.FC = () => {
           <Typography>No posts found.</Typography>
         ) : (
           <>
-            {filteredPosts.slice(0, visibleCount).map(post => (
-              <Box key={post._id} sx={{ position: 'relative', mb: 3 }}>
-                <ReviewCard
-                  id={post._id}
-                  username={post.userId?.username || 'Unknown'}
-                  userImage={post.userId?.profileImage || ''}
-                  restaurantImage={post.images?.[0] || ''}
-                  restaurantName={post.restaurantName}
-                  restaurantLocation=""
-                  content={post.text}
-                  rating={post.rating}
-                  likes={post.likes?.length || 0}
-                  commentsCount={0}
-                />
-                <Box sx={{ display: 'flex', gap: 2, justifyContent: 'center', mt: 1 }}>
-                  <Button variant="outlined" color="primary" onClick={() => handleEdit(post)}>Edit</Button>
-                  <Button variant="outlined" color="error" onClick={() => handleDelete(post._id)}>Delete</Button>
+            {filteredPosts.slice(0, visibleCount).map(post => {
+              const restaurantImage = post.images?.[0]
+                ? `${process.env.REACT_APP_SERVER_URL}${post.images[0]}`
+                : '';
+
+              return (
+                <Box key={post._id} sx={{ position: 'relative', mb: 3 }}>
+                  <ReviewCard
+                    id={post._id}
+                    username={post.userId?.username || 'Unknown'}
+                    userImage={post.userId?.profileImage || ''}
+                    restaurantImage={restaurantImage}
+                    restaurantName={post.restaurantName}
+                    restaurantLocation=""
+                    content={post.text}
+                    rating={post.rating}
+                    likes={post.likes?.length || 0}
+                    commentsCount={0}
+                  />
+                  <Box sx={{ display: 'flex', gap: 2, justifyContent: 'center', mt: 1 }}>
+                    <Button variant="outlined" color="primary" onClick={() => handleEdit(post)}>Edit</Button>
+                    <Button variant="outlined" color="error" onClick={() => handleDelete(post._id)}>Delete</Button>
+                  </Box>
                 </Box>
-              </Box>
-            ))}
+              );
+            })}
 
             {visibleCount < filteredPosts.length && (
               <Box textAlign="center" mt={3}>
@@ -165,7 +174,9 @@ const MyPosts: React.FC = () => {
           defaultValues={{
             content: selectedPost.text,
             rating: selectedPost.rating,
-            image: selectedPost.images?.[0] || '',
+            imageUrl: selectedPost.images?.[0]
+              ? `${process.env.REACT_APP_SERVER_URL}${selectedPost.images[0]}`
+              : '',
             restaurantName: selectedPost.restaurantName,
             restaurantLocation: '',
           }}

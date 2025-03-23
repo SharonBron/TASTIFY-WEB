@@ -25,6 +25,8 @@ const Home: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [minRating, setMinRating] = useState<number | null>(null);
 
+
+
   useEffect(() => {
     const fetchPosts = async () => {
       try {
@@ -46,7 +48,7 @@ const Home: React.FC = () => {
   const handlePostReview = async (data: {
     content: string;
     rating: number;
-    image?: string;
+    imageUrl?: string;
     restaurantName: string;
     restaurantLocation: string;
   }) => {
@@ -56,18 +58,20 @@ const Home: React.FC = () => {
       formData.append('text', data.content);
       formData.append('rating', String(data.rating));
       formData.append('restaurantName', data.restaurantName);
-      if (data.image) {
-        const blob = await fetch(data.image).then(res => res.blob());
+      formData.append('restaurantLocation', data.restaurantLocation);
+  
+      if (data.imageUrl?.startsWith('blob:')) {
+        const blob = await fetch(data.imageUrl).then(res => res.blob());
         formData.append('image', blob, 'image.jpg');
       }
-
+  
       const res = await axios.post(`${process.env.REACT_APP_API_URL}/posts`, formData, {
         headers: {
           Authorization: `Bearer ${token}`,
           'Content-Type': 'multipart/form-data',
         },
       });
-
+  
       setPosts(prev => [res.data, ...prev]);
       setOpenModal(false);
     } catch (err) {
@@ -75,6 +79,7 @@ const Home: React.FC = () => {
       alert('Failed to create post');
     }
   };
+  
 
   const filteredReviews = posts.filter(review => {
     const matchesSearch = review.restaurantName.toLowerCase().includes(searchTerm.toLowerCase());
@@ -120,7 +125,11 @@ const Home: React.FC = () => {
             id={review._id}
             username={review.userId.username}
             userImage={review.userId.profileImage}
-            restaurantImage={review.images[0]}
+            restaurantImage={
+              review.images?.[0]
+                ? `${process.env.REACT_APP_SERVER_URL}${review.images[0]}`
+                : undefined
+            }
             restaurantName={review.restaurantName}
             restaurantLocation=""
             content={review.text}

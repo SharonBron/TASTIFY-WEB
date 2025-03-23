@@ -21,14 +21,14 @@ type Props = {
   onSubmit: (data: {
     content: string;
     rating: number;
-    image?: string;
+    imageUrl?: string;
     restaurantName: string;
     restaurantLocation: string;
   }) => void;
   defaultValues?: {
     content: string;
     rating: number;
-    image?: string;
+    imageUrl?: string;
     restaurantName: string;
     restaurantLocation: string;
   };
@@ -37,7 +37,8 @@ type Props = {
 const AddReviewModal: React.FC<Props> = ({ open, onClose, onSubmit, defaultValues }) => {
   const [content, setContent] = useState(defaultValues?.content || '');
   const [rating, setRating] = useState<number | null>(defaultValues?.rating || 0);
-  const [image, setImage] = useState<string | null>(defaultValues?.image || null);
+  const [imageUrl, setImageUrl] = useState<string | null>(defaultValues?.imageUrl || null);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [restaurantName, setRestaurantName] = useState(defaultValues?.restaurantName || '');
   const [restaurantLocation, setRestaurantLocation] = useState(defaultValues?.restaurantLocation || '');
   const [loadingSuggestion, setLoadingSuggestion] = useState(false);
@@ -45,11 +46,9 @@ const AddReviewModal: React.FC<Props> = ({ open, onClose, onSubmit, defaultValue
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setImage(reader.result as string);
-      };
-      reader.readAsDataURL(file);
+      setSelectedFile(file);
+      const previewUrl = URL.createObjectURL(file);
+      setImageUrl(previewUrl);
     }
   };
 
@@ -57,13 +56,16 @@ const AddReviewModal: React.FC<Props> = ({ open, onClose, onSubmit, defaultValue
     onSubmit({
       content,
       rating: rating || 0,
-      image: image || undefined,
+      imageUrl: imageUrl || undefined, // זאת תמונת preview - בפועל בשרת תטפלי בקובץ
       restaurantName,
       restaurantLocation,
     });
+
+    // ניקוי
     setContent('');
     setRating(0);
-    setImage(null);
+    setImageUrl(null);
+    setSelectedFile(null);
     setRestaurantName('');
     setRestaurantLocation('');
     onClose();
@@ -163,9 +165,9 @@ const AddReviewModal: React.FC<Props> = ({ open, onClose, onSubmit, defaultValue
           </label>
         </Box>
 
-        {image && (
+        {imageUrl && (
           <Box sx={{ mt: 2 }}>
-            <img src={image} alt="Preview" style={{ maxWidth: '100%', borderRadius: 8 }} />
+            <img src={imageUrl} alt="Preview" style={{ maxWidth: '100%', borderRadius: 8 }} />
           </Box>
         )}
 
