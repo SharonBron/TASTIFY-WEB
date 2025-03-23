@@ -45,7 +45,7 @@ const ReviewCard: React.FC<ReviewCardProps> = ({
     navigate('/post', {
       state: {
         post: {
-          id,
+          _id: id,
           username,
           userImage,
           restaurantImage,
