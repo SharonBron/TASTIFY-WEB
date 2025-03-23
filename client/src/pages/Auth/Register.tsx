@@ -7,7 +7,8 @@ import {
   Box,
   Avatar,
   Paper,
-  Link
+  Link,
+  Divider
 } from '@mui/material';
 import PersonAddAlt1Icon from '@mui/icons-material/PersonAddAlt1';
 import { useForm } from 'react-hook-form';
@@ -15,6 +16,7 @@ import { yupResolver } from '@hookform/resolvers/yup';
 import * as yup from 'yup';
 import { Link as RouterLink, useNavigate } from 'react-router-dom';
 import axios from 'axios';
+import { GoogleLogin, GoogleOAuthProvider } from '@react-oauth/google';
 
 type FormValues = {
   email: string;
@@ -46,14 +48,31 @@ const Register: React.FC = () => {
   const onSubmit = async (data: FormValues) => {
     try {
       const response = await axios.post(`${process.env.REACT_APP_API_URL}/auth/register`, data);
-      const { accessToken, refreshToken, user } = response.data; 
-      localStorage.setItem('accessToken', response.data.accessToken);
-      localStorage.setItem('refreshToken', response.data.refreshToken);
+      const { accessToken, refreshToken, user } = response.data;
+      localStorage.setItem('accessToken', accessToken);
+      localStorage.setItem('refreshToken', refreshToken);
       localStorage.setItem('userId', user._id);
-      navigate('/home', { replace: true }); // ניווט עם חסימה של "אחורה"
+      navigate('/home', { replace: true });
     } catch (error: any) {
       console.error('Registration error:', error);
       alert(error.response?.data?.msg || 'Registration failed.');
+    }
+  };
+
+  const handleGoogleLogin = async (credentialResponse: any) => {
+    try {
+      const res = await axios.post(`${process.env.REACT_APP_API_URL}/auth/google`, {
+        idToken: credentialResponse.credential,
+      });
+
+      const { accessToken, refreshToken, user } = res.data;
+      localStorage.setItem('accessToken', accessToken);
+      localStorage.setItem('refreshToken', refreshToken);
+      localStorage.setItem('userId', user._id);
+      navigate('/home', { replace: true });
+    } catch (error) {
+      console.error('❌ Google login failed:', error);
+      alert('Google login failed');
     }
   };
 
@@ -72,15 +91,22 @@ const Register: React.FC = () => {
           <TextField fullWidth label="Last Name" margin="normal" {...register('lastName')} error={!!errors.lastName} helperText={errors.lastName?.message} />
           <TextField fullWidth label="Password" type="password" margin="normal" {...register('password')} error={!!errors.password} helperText={errors.password?.message} />
           <Button type="submit" fullWidth variant="contained" sx={{ mt: 3 }}>Register</Button>
+        </Box>
 
-          <Box textAlign="center" mt={2}>
-            <Typography variant="body2">
-              Already have an account?
-              <Link component={RouterLink} to="/login" sx={{ ml: 1 }}>
-                Login here
-              </Link>
-            </Typography>
-          </Box>
+        <Divider sx={{ my: 3 }}>Or register with</Divider>
+
+        <GoogleLogin
+          onSuccess={handleGoogleLogin}
+          onError={() => alert('Google login failed')}
+        />
+
+        <Box textAlign="center" mt={2}>
+          <Typography variant="body2">
+            Already have an account?
+            <Link component={RouterLink} to="/login" sx={{ ml: 1 }}>
+              Login here
+            </Link>
+          </Typography>
         </Box>
       </Paper>
     </Container>
