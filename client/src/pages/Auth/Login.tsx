@@ -40,8 +40,10 @@ const Login: React.FC = () => {
   const onSubmit = async (data: FormValues) => {
     try {
       const response = await axios.post(`${process.env.REACT_APP_API_URL}/auth/login`, data);
+      const { accessToken, refreshToken, user } = response.data; 
       localStorage.setItem('accessToken', response.data.accessToken);
       localStorage.setItem('refreshToken', response.data.refreshToken);
+      localStorage.setItem('userId', user._id);
       navigate('/home', { replace: true }); // ניווט עם חסימה של "אחורה"
     } catch (error: any) {
       console.error('Login error:', error);
