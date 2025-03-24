@@ -38,18 +38,20 @@ const Home: React.FC = () => {
 
         const postsWithExtras = await Promise.all(
           res.data.posts.map(async (post: any) => {
-            const commentsRes = await axios.get(`${process.env.REACT_APP_API_URL}/comments/post/${post._id}`, {
-              headers: { Authorization: `Bearer ${token}` },
-            });
-
-            const likedByMe = post.likes?.some(
-              (likeId: string) => likeId === currentUserId
-            );
+            const [commentsRes, postDetails] = await Promise.all([
+              axios.get(`${process.env.REACT_APP_API_URL}/comments/post/${post._id}`, {
+                headers: { Authorization: `Bearer ${token}` },
+              }),
+              axios.get(`${process.env.REACT_APP_API_URL}/posts/${post._id}`, {
+                headers: { Authorization: `Bearer ${token}` },
+              }),
+            ]);
 
             return {
               ...post,
               commentsCount: commentsRes.data.length,
-              likedByMe,
+              likedByMe: postDetails.data.likedByMe,
+              likes: postDetails.data.likesCount,
             };
           })
         );
@@ -98,7 +100,6 @@ const Home: React.FC = () => {
     }
   };
 
-  // Toggle like on server and update UI
   const handleLike = async (postId: string) => {
     try {
       const token = localStorage.getItem('accessToken');
@@ -117,7 +118,7 @@ const Home: React.FC = () => {
           post._id === postId
             ? {
                 ...post,
-                likes: new Array(res.data.totalLikes), // display only
+                likes: res.data.totalLikes,
                 likedByMe: res.data.liked,
               }
             : post
@@ -183,7 +184,7 @@ const Home: React.FC = () => {
               restaurantLocation=""
               content={review.text}
               rating={review.rating}
-              likes={Array.isArray(review.likes) ? review.likes.length : review.likesCount || 0}
+              likes={Array.isArray(review.likes) ? review.likes.length : review.likes}
               likedByMe={review.likedByMe || false}
               commentsCount={review.commentsCount || 0}
               onLike={() => handleLike(review._id)}
