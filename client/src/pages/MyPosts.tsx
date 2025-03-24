@@ -51,6 +51,7 @@ const MyPosts: React.FC = () => {
               commentsCount: commentsRes.data.length,
               likedByMe: detailsRes.data.likedByMe,
               likes: detailsRes.data.likesCount,
+              userId: detailsRes.data.post.userId, // כולל username ו-profileImage
             };
           })
         );

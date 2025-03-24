@@ -52,6 +52,7 @@ const Home: React.FC = () => {
               commentsCount: commentsRes.data.length,
               likedByMe: postDetails.data.likedByMe,
               likes: postDetails.data.likesCount,
+              userId: postDetails.data.post.userId, // כולל username + profileImage
             };
           })
         );
@@ -85,14 +86,36 @@ const Home: React.FC = () => {
         formData.append('image', blob, 'image.jpg');
       }
 
-      const res = await axios.post(`${process.env.REACT_APP_API_URL}/posts`, formData, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          'Content-Type': 'multipart/form-data',
-        },
-      });
+      const createRes = await axios.post(
+        `${process.env.REACT_APP_API_URL}/posts`,
+        formData,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'multipart/form-data',
+          },
+        }
+      );
 
-      setPosts(prev => [res.data, ...prev]);
+      const newPostId = createRes.data._id;
+
+      const fullPostRes = await axios.get(
+        `${process.env.REACT_APP_API_URL}/posts/${newPostId}`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      const enrichedPost = {
+        ...fullPostRes.data.post,
+        likes: fullPostRes.data.likesCount,
+        likedByMe: fullPostRes.data.likedByMe,
+        commentsCount: fullPostRes.data.commentsCount,
+      };
+
+      setPosts(prev => [enrichedPost, ...prev]);
       setOpenModal(false);
     } catch (err) {
       console.error('❌ Error creating post:', err);
