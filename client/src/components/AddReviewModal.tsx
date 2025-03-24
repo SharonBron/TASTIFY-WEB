@@ -23,25 +23,23 @@ type Props = {
     rating: number;
     imageUrl?: string;
     restaurantName: string;
-    restaurantLocation: string;
   }) => void;
   defaultValues?: {
     content: string;
     rating: number;
     imageUrl?: string;
     restaurantName: string;
-    restaurantLocation: string;
   };
 };
 
 const AddReviewModal: React.FC<Props> = ({ open, onClose, onSubmit, defaultValues }) => {
   const [content, setContent] = useState(defaultValues?.content || '');
-  const [rating, setRating] = useState<number | null>(defaultValues?.rating || 0);
+  const [rating, setRating] = useState<number | null>(defaultValues?.rating || null);
   const [imageUrl, setImageUrl] = useState<string | null>(defaultValues?.imageUrl || null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [restaurantName, setRestaurantName] = useState(defaultValues?.restaurantName || '');
-  const [restaurantLocation, setRestaurantLocation] = useState(defaultValues?.restaurantLocation || '');
   const [loadingSuggestion, setLoadingSuggestion] = useState(false);
+  const [ratingError, setRatingError] = useState(false);
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -53,21 +51,25 @@ const AddReviewModal: React.FC<Props> = ({ open, onClose, onSubmit, defaultValue
   };
 
   const handlePost = () => {
+    if (!rating || rating < 1) {
+      setRatingError(true);
+      return;
+    }
+
     onSubmit({
       content,
-      rating: rating || 0,
-      imageUrl: imageUrl || undefined, // זאת תמונת preview - בפועל בשרת תטפלי בקובץ
+      rating,
+      imageUrl: imageUrl || undefined,
       restaurantName,
-      restaurantLocation,
     });
 
     // ניקוי
     setContent('');
-    setRating(0);
+    setRating(null);
     setImageUrl(null);
     setSelectedFile(null);
     setRestaurantName('');
-    setRestaurantLocation('');
+    setRatingError(false);
     onClose();
   };
 
@@ -108,19 +110,24 @@ const AddReviewModal: React.FC<Props> = ({ open, onClose, onSubmit, defaultValue
         maxHeight: '90vh',
         overflowY: 'auto',
         bgcolor: 'white',
-        p: 2,
+        p: 3,
         mx: 'auto',
         mt: '5vh',
-        borderRadius: 2,
+        borderRadius: 3,
         boxShadow: 24,
         position: 'relative',
+        display: 'flex',
+        flexDirection: 'column',
       }}>
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <Button onClick={handlePost}>Post</Button>
-          <IconButton onClick={onClose}><CloseIcon /></IconButton>
-        </Box>
+        {/* סגירה */}
+        <IconButton
+          onClick={onClose}
+          sx={{ position: 'absolute', top: 8, right: 8 }}
+        >
+          <CloseIcon />
+        </IconButton>
 
-        <Typography variant="h6" sx={{ mt: 1, mb: 2 }}>Create a Review</Typography>
+        <Typography variant="h6" sx={{ mb: 3 }}>Create a Review</Typography>
 
         <TextField
           label="Restaurant Name"
@@ -128,13 +135,6 @@ const AddReviewModal: React.FC<Props> = ({ open, onClose, onSubmit, defaultValue
           sx={{ mb: 2 }}
           value={restaurantName}
           onChange={(e) => setRestaurantName(e.target.value)}
-        />
-        <TextField
-          label="Restaurant Location"
-          fullWidth
-          sx={{ mb: 2 }}
-          value={restaurantLocation}
-          onChange={(e) => setRestaurantLocation(e.target.value)}
         />
 
         <TextField
@@ -146,25 +146,48 @@ const AddReviewModal: React.FC<Props> = ({ open, onClose, onSubmit, defaultValue
           onChange={(e) => setContent(e.target.value)}
         />
 
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mt: 2 }}>
-          <Rating
-            value={rating}
-            onChange={(_, newValue) => setRating(newValue)}
-          />
-          <label htmlFor="upload-photo">
-            <input
-              type="file"
-              id="upload-photo"
-              accept="image/*"
-              hidden
-              onChange={handleImageChange}
-            />
-            <IconButton component="span" color="primary">
-              <AddPhotoAlternateIcon />
-            </IconButton>
-          </label>
-        </Box>
+<Box sx={{ mt: 3 }}>
+  <Typography variant="subtitle1" align="center" sx={{ mb: 1 }}>
+    Rate this restaurant
+  </Typography>
 
+  <Box sx={{ display: 'flex', justifyContent: 'center' }}>
+    <Rating
+      value={rating}
+      onChange={(_, newValue) => {
+        setRating(newValue);
+        if (newValue) setRatingError(false);
+      }}
+    />
+  </Box>
+
+  {ratingError && (
+    <Typography color="error" fontSize="0.875rem" align="center" sx={{ mt: 1 }}>
+      Please provide a rating.
+    </Typography>
+  )}
+
+  {/* כפתור העלאת תמונה - רחב */}
+  <label htmlFor="upload-photo">
+    <input
+      type="file"
+      id="upload-photo"
+      accept="image/*"
+      hidden
+      onChange={handleImageChange}
+    />
+    <Button
+      component="span"
+      variant="outlined"
+      color="primary"
+      startIcon={<AddPhotoAlternateIcon />}
+      fullWidth
+      sx={{ mt: 2 }}
+    >
+      Upload Image
+    </Button>
+  </label>
+</Box>
         {imageUrl && (
           <Box sx={{ mt: 2 }}>
             <img src={imageUrl} alt="Preview" style={{ maxWidth: '100%', borderRadius: 8 }} />
@@ -178,7 +201,18 @@ const AddReviewModal: React.FC<Props> = ({ open, onClose, onSubmit, defaultValue
           sx={{ mt: 3 }}
           disabled={loadingSuggestion}
         >
-          {loadingSuggestion ? <CircularProgress size={20} /> : 'רוצה שנציע לך ניסוח אוטומטי?'}
+          {loadingSuggestion ? <CircularProgress size={20} /> : 'רוצה שנציע ניסוח אוטומטי?'}
+        </Button>
+
+        {/* כפתור Post למטה */}
+        <Button
+          onClick={handlePost}
+          variant="contained"
+          color="primary"
+          fullWidth
+          sx={{ mt: 4 }}
+        >
+          Post
         </Button>
       </Box>
     </Modal>

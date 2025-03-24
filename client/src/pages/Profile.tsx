@@ -91,7 +91,7 @@ const Profile: React.FC = () => {
   return (
     <>
       <Navbar />
-
+      <div style={{ minHeight: '100vh' }}>
       <Container sx={{ mt: 4, mb: 4 }}>
         <Typography variant="h5" gutterBottom>My Profile</Typography>
 
@@ -142,7 +142,7 @@ const Profile: React.FC = () => {
           Save Changes
         </Button>
       </Container>
-
+      </div>
       <Footer />
     </>
   );

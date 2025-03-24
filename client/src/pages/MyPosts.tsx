@@ -5,6 +5,7 @@ import {
   Button,
   Box,
   Rating,
+  Tooltip,
 } from '@mui/material';
 import { usePosts } from '../context/PostsContext';
 import ReviewCard from '../components/ReviewCard';
@@ -12,6 +13,10 @@ import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
 import AddReviewModal from '../components/AddReviewModal';
 import axios from 'axios';
+import EditIcon from '@mui/icons-material/Edit';
+import DeleteIcon from '@mui/icons-material/Delete';
+import IconButton from '@mui/material/IconButton';
+
 
 const POSTS_PER_PAGE = 5;
 
@@ -24,6 +29,7 @@ const MyPosts: React.FC = () => {
   const [selectedRating, setSelectedRating] = useState<number | null>(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [selectedPost, setSelectedPost] = useState<any>(null);
+
 
   useEffect(() => {
     const fetchUserPosts = async () => {
@@ -93,7 +99,6 @@ const MyPosts: React.FC = () => {
     rating: number;
     imageUrl?: string;
     restaurantName: string;
-    restaurantLocation: string;
   }) => {
     if (!selectedPost) return;
 
@@ -156,7 +161,7 @@ const MyPosts: React.FC = () => {
   return (
     <>
       <Navbar searchTerm={searchTerm} setSearchTerm={setSearchTerm} />
-
+      <div style={{ minHeight: '100vh' }}>
       <Container sx={{ mt: 4 }}>
         <Typography variant="h5" gutterBottom>My Posts</Typography>
 
@@ -187,10 +192,13 @@ const MyPosts: React.FC = () => {
                   <ReviewCard
                     id={post._id}
                     username={post.userId?.username || 'Unknown'}
-                    userImage={post.userId?.profileImage || ''}
+                    userImage={
+                      post.userId?.profileImage?.startsWith('/uploads')
+                        ? `${process.env.REACT_APP_SERVER_URL}${post.userId.profileImage}`
+                        : post.userId?.profileImage || ''
+                    }
                     restaurantImage={restaurantImage}
                     restaurantName={post.restaurantName}
-                    restaurantLocation=""
                     content={post.text}
                     rating={post.rating}
                     likes={Array.isArray(post.likes) ? post.likes.length : post.likes}
@@ -198,10 +206,30 @@ const MyPosts: React.FC = () => {
                     commentsCount={post.commentsCount || 0}
                     onLike={() => handleLike(post._id)}
                   />
-                  <Box sx={{ display: 'flex', gap: 2, justifyContent: 'center', mt: 1 }}>
-                    <Button variant="outlined" color="primary" onClick={() => handleEdit(post)}>Edit</Button>
-                    <Button variant="outlined" color="error" onClick={() => handleDelete(post._id)}>Delete</Button>
-                  </Box>
+                <Box
+  sx={{
+    position: 'absolute',
+    top: 8,
+    right: 1,
+    display: 'flex',
+   // gap: 1,
+    backgroundColor: 'rgba(255,255,255,0.7)',
+    borderRadius: 2,
+    p: 0.5,
+  }}
+>
+  <Tooltip title="Edit">
+    <IconButton size="small" onClick={() => handleEdit(post)}>
+      <EditIcon fontSize="small" />
+    </IconButton>
+  </Tooltip>
+  <Tooltip title="Delete">
+    <IconButton size="small" onClick={() => handleDelete(post._id)}>
+      <DeleteIcon fontSize="small" />
+    </IconButton>
+  </Tooltip>
+</Box>
+
                 </Box>
               );
             })}
@@ -232,11 +260,10 @@ const MyPosts: React.FC = () => {
               ? `${process.env.REACT_APP_SERVER_URL}${selectedPost.images[0]}`
               : '',
             restaurantName: selectedPost.restaurantName,
-            restaurantLocation: '',
           }}
         />
       )}
-
+</div>
       <Footer />
     </>
   );

@@ -11,6 +11,7 @@ import {
   IconButton,
   Button,
   Rating,
+  Avatar,
 } from '@mui/material';
 import AddPhotoAlternateIcon from '@mui/icons-material/AddPhotoAlternate';
 import axios from 'axios';
@@ -71,7 +72,6 @@ const Home: React.FC = () => {
     rating: number;
     imageUrl?: string;
     restaurantName: string;
-    restaurantLocation: string;
   }) => {
     try {
       const token = localStorage.getItem('accessToken');
@@ -79,7 +79,6 @@ const Home: React.FC = () => {
       formData.append('text', data.content);
       formData.append('rating', String(data.rating));
       formData.append('restaurantName', data.restaurantName);
-      formData.append('restaurantLocation', data.restaurantLocation);
 
       if (data.imageUrl?.startsWith('blob:')) {
         const blob = await fetch(data.imageUrl).then(res => res.blob());
@@ -162,34 +161,69 @@ const Home: React.FC = () => {
   return (
     <>
       <Navbar searchTerm={searchTerm} setSearchTerm={setSearchTerm} />
+    <div style={{ minHeight: '100vh' }}>
+      <Container sx={{ mt: 4}}>
+    {/* כפתור הוספת ביקורת - קטן, ממורכז, בצבע שונה */}
+<Box sx={{ display: 'flex', justifyContent: 'center', mb: 3 }}>
+  <Paper
+    onClick={() => setOpenModal(true)}
+    sx={{
+      display: 'flex',
+      alignItems: 'center',
+      gap: 1,
+      px: 2,
+      py: 1,
+      cursor: 'pointer',
+      borderRadius: 50,
+      backgroundColor: '#e0f7fa', // תכלת רך
+      color: 'primary.main',
+      boxShadow: 1,
+      transition: '0.2s',
+      '&:hover': {
+        backgroundColor: '#b2ebf2',
+      },
+    }}
+  >
+    <AddPhotoAlternateIcon fontSize="small" />
+    <Typography variant="body2" fontWeight={500}>
+      Add your review
+    </Typography>
+  </Paper>
+</Box>
 
-      <Container sx={{ mt: 4 }}>
-        <Paper
-          onClick={() => setOpenModal(true)}
-          sx={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: 2,
-            p: 2,
-            cursor: 'pointer',
-            borderRadius: 2,
-            mb: 4,
-          }}
-        >
-          <Typography color="text.secondary">Add your review</Typography>
-          <IconButton>
-            <AddPhotoAlternateIcon />
-          </IconButton>
-        </Paper>
+{/* פילטר דירוג - קומפקטי, ממורכז, בגוון עדין */}
+<Box sx={{ display: 'flex', justifyContent: 'center', mb: 3 }}>
+  <Paper
+    elevation={0}
+    sx={{
+      display: 'flex',
+      alignItems: 'center',
+      gap: 1,
+      px: 2,
+      py: 1,
+      borderRadius: 50,
+      bgcolor: '#f3f3f3',
+    }}
+  >
+    <Typography variant="body2">Filter by rating:</Typography>
+    <Rating
+      value={minRating}
+      size="small"
+      onChange={(_, newValue) => setMinRating(newValue)}
+    />
+    {minRating !== null && (
+      <Button
+        size="small"
+        variant="text"
+        color="error"
+        onClick={() => setMinRating(null)}
+      >
+        Clear
+      </Button>
+    )}
+  </Paper>
+</Box>
 
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
-          <Typography>Filter by rating:</Typography>
-          <Rating
-            value={minRating}
-            onChange={(_, newValue) => setMinRating(newValue)}
-          />
-          <Button variant="text" onClick={() => setMinRating(null)}>Clear</Button>
-        </Box>
 
         {filteredReviews.slice(0, visibleCount).map((review) => {
           const restaurantImage = review.images?.[0]
@@ -201,10 +235,13 @@ const Home: React.FC = () => {
               key={review._id}
               id={review._id}
               username={review.userId?.username || 'Unknown'}
-              userImage={review.userId?.profileImage || ''}
+              userImage={
+              review.userId?.profileImage?.startsWith('/uploads')
+              ? `${process.env.REACT_APP_SERVER_URL}${review.userId.profileImage}`
+              : review.userId?.profileImage || ''
+              }
               restaurantImage={restaurantImage}
               restaurantName={review.restaurantName}
-              restaurantLocation=""
               content={review.text}
               rating={review.rating}
               likes={Array.isArray(review.likes) ? review.likes.length : review.likes}
@@ -223,9 +260,9 @@ const Home: React.FC = () => {
           </Box>
         )}
       </Container>
-
+      </div>
       <Footer />
-
+    
       <AddReviewModal
         open={openModal}
         onClose={() => setOpenModal(false)}

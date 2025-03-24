@@ -13,7 +13,6 @@ export type ReviewCardProps = {
   userImage: string;
   restaurantImage: string;
   restaurantName: string;
-  restaurantLocation: string;
   content: string;
   rating: number;
   likes: number;
@@ -28,7 +27,6 @@ const ReviewCard: React.FC<ReviewCardProps> = ({
   userImage,
   restaurantImage,
   restaurantName,
-  restaurantLocation,
   content,
   rating,
   likes,
@@ -47,7 +45,6 @@ const ReviewCard: React.FC<ReviewCardProps> = ({
           userImage,
           restaurantImage,
           restaurantName,
-          restaurantLocation,
           content,
           rating,
           likes,
@@ -62,7 +59,7 @@ const ReviewCard: React.FC<ReviewCardProps> = ({
       <CardHeader
         avatar={<Avatar src={userImage} />}
         title={username}
-        subheader={`${restaurantName} • ${restaurantLocation}`}
+        subheader={`${restaurantName}`}
       />
       <CardMedia
         component="img"
