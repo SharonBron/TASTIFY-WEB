@@ -35,20 +35,29 @@ const MyPosts: React.FC = () => {
           },
         });
 
-        const postsWithComments = await Promise.all(
+        const enrichedPosts = await Promise.all(
           response.data.posts.map(async (post: any) => {
-            const commentRes = await axios.get(`${process.env.REACT_APP_API_URL}/comments/post/${post._id}`);
+            const [commentsRes, detailsRes] = await Promise.all([
+              axios.get(`${process.env.REACT_APP_API_URL}/comments/post/${post._id}`, {
+                headers: { Authorization: `Bearer ${token}` },
+              }),
+              axios.get(`${process.env.REACT_APP_API_URL}/posts/${post._id}`, {
+                headers: { Authorization: `Bearer ${token}` },
+              }),
+            ]);
+
             return {
               ...post,
-              commentsCount: commentRes.data.length,
-              likesCount: post.likes?.length || 0,
+              commentsCount: commentsRes.data.length,
+              likedByMe: detailsRes.data.likedByMe,
+              likes: detailsRes.data.likesCount,
             };
           })
         );
 
-        setPosts(postsWithComments);
+        setPosts(enrichedPosts);
       } catch (error) {
-        console.error('Error fetching user posts:', error);
+        console.error('❌ Error fetching user posts:', error);
       }
     };
 
@@ -56,25 +65,6 @@ const MyPosts: React.FC = () => {
       fetchUserPosts();
     }
   }, [currentUserId, setPosts]);
-
-  const handleLike = async (postId: string) => {
-    try {
-      const token = localStorage.getItem('accessToken');
-      await axios.post(`${process.env.REACT_APP_API_URL}/posts/${postId}/like`, {}, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-
-      setPosts(prev =>
-        prev.map(post =>
-          post._id === postId
-            ? { ...post, likesCount: (post.likesCount || 0) + 1 }
-            : post
-        )
-      );
-    } catch (err) {
-      console.error('Failed to like post:', err);
-    }
-  };
 
   const handleDelete = async (id: string) => {
     if (window.confirm('Are you sure you want to delete this post?')) {
@@ -87,7 +77,7 @@ const MyPosts: React.FC = () => {
         });
         setPosts(prev => prev.filter(post => post._id !== id));
       } catch (err) {
-        console.error('Failed to delete post:', err);
+        console.error('❌ Failed to delete post:', err);
       }
     }
   };
@@ -126,6 +116,36 @@ const MyPosts: React.FC = () => {
     setSelectedPost(null);
   };
 
+  const handleLike = async (postId: string) => {
+    try {
+      const token = localStorage.getItem('accessToken');
+      const res = await axios.put(
+        `${process.env.REACT_APP_API_URL}/posts/${postId}/like`,
+        {},
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      setPosts(prevPosts =>
+        prevPosts.map(post =>
+          post._id === postId
+            ? {
+                ...post,
+                likes: res.data.totalLikes,
+                likedByMe: res.data.liked,
+              }
+            : post
+        )
+      );
+    } catch (err) {
+      console.error('❌ Failed to toggle like:', err);
+      alert('Failed to like the post.');
+    }
+  };
+
   const filteredPosts = posts.filter(
     post =>
       post.restaurantName.toLowerCase().includes(searchTerm.toLowerCase()) &&
@@ -160,22 +180,20 @@ const MyPosts: React.FC = () => {
               const restaurantImage = post.images?.[0]
                 ? `${process.env.REACT_APP_SERVER_URL}${post.images[0]}`
                 : '';
-              const userImage = post.userId?.profileImage?.startsWith('/uploads')
-                ? `${process.env.REACT_APP_SERVER_URL}${post.userId.profileImage}`
-                : post.userId?.profileImage || '';
 
               return (
                 <Box key={post._id} sx={{ position: 'relative', mb: 3 }}>
                   <ReviewCard
                     id={post._id}
                     username={post.userId?.username || 'Unknown'}
-                    userImage={userImage}
+                    userImage={post.userId?.profileImage || ''}
                     restaurantImage={restaurantImage}
                     restaurantName={post.restaurantName}
                     restaurantLocation=""
                     content={post.text}
                     rating={post.rating}
-                    likes={post.likesCount || 0}
+                    likes={Array.isArray(post.likes) ? post.likes.length : post.likes}
+                    likedByMe={post.likedByMe || false}
                     commentsCount={post.commentsCount || 0}
                     onLike={() => handleLike(post._id)}
                   />

@@ -24,8 +24,7 @@ const Home: React.FC = () => {
   const [visibleCount, setVisibleCount] = useState(POSTS_PER_PAGE);
   const [searchTerm, setSearchTerm] = useState('');
   const [minRating, setMinRating] = useState<number | null>(null);
-
-
+  const currentUserId = localStorage.getItem('userId');
 
   useEffect(() => {
     const fetchPosts = async () => {
@@ -36,14 +35,33 @@ const Home: React.FC = () => {
             Authorization: `Bearer ${token}`,
           },
         });
-        setPosts(res.data.posts);
+
+        const postsWithExtras = await Promise.all(
+          res.data.posts.map(async (post: any) => {
+            const commentsRes = await axios.get(`${process.env.REACT_APP_API_URL}/comments/post/${post._id}`, {
+              headers: { Authorization: `Bearer ${token}` },
+            });
+
+            const likedByMe = post.likes?.some(
+              (likeId: string) => likeId === currentUserId
+            );
+
+            return {
+              ...post,
+              commentsCount: commentsRes.data.length,
+              likedByMe,
+            };
+          })
+        );
+
+        setPosts(postsWithExtras);
       } catch (err) {
         console.error('❌ Error fetching posts:', err);
       }
     };
 
     fetchPosts();
-  }, [setPosts]);
+  }, [setPosts, currentUserId]);
 
   const handlePostReview = async (data: {
     content: string;
@@ -59,19 +77,19 @@ const Home: React.FC = () => {
       formData.append('rating', String(data.rating));
       formData.append('restaurantName', data.restaurantName);
       formData.append('restaurantLocation', data.restaurantLocation);
-  
+
       if (data.imageUrl?.startsWith('blob:')) {
         const blob = await fetch(data.imageUrl).then(res => res.blob());
         formData.append('image', blob, 'image.jpg');
       }
-  
+
       const res = await axios.post(`${process.env.REACT_APP_API_URL}/posts`, formData, {
         headers: {
           Authorization: `Bearer ${token}`,
           'Content-Type': 'multipart/form-data',
         },
       });
-  
+
       setPosts(prev => [res.data, ...prev]);
       setOpenModal(false);
     } catch (err) {
@@ -79,10 +97,40 @@ const Home: React.FC = () => {
       alert('Failed to create post');
     }
   };
-  
+
+  // Toggle like on server and update UI
+  const handleLike = async (postId: string) => {
+    try {
+      const token = localStorage.getItem('accessToken');
+      const res = await axios.put(
+        `${process.env.REACT_APP_API_URL}/posts/${postId}/like`,
+        {},
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      setPosts(prev =>
+        prev.map(post =>
+          post._id === postId
+            ? {
+                ...post,
+                likes: new Array(res.data.totalLikes), // display only
+                likedByMe: res.data.liked,
+              }
+            : post
+        )
+      );
+    } catch (err) {
+      console.error('❌ Failed to toggle like:', err);
+      alert('Failed to toggle like. Please try again.');
+    }
+  };
 
   const filteredReviews = posts.filter(review => {
-    const matchesSearch = review.restaurantName.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesSearch = review.restaurantName?.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesRating = minRating !== null ? review.rating === minRating : true;
     return matchesSearch && matchesRating;
   });
@@ -119,30 +167,29 @@ const Home: React.FC = () => {
           <Button variant="text" onClick={() => setMinRating(null)}>Clear</Button>
         </Box>
 
-        {filteredReviews.slice(0, visibleCount).map((review) => (
-          <ReviewCard
-            key={review._id}
-            id={review._id}
-            username={review.userId.username}
-            userImage={
-              review.userId?.profileImage?.startsWith('/uploads')
-                ? `${process.env.REACT_APP_SERVER_URL}${review.userId.profileImage}`
-                : review.userId?.profileImage || ''
-            }
-            
-            restaurantImage={
-              review.images?.[0]
-                ? `${process.env.REACT_APP_SERVER_URL}${review.images[0]}`
-                : undefined
-            }
-            restaurantName={review.restaurantName}
-            restaurantLocation=""
-            content={review.text}
-            rating={review.rating}
-            likes={review.likes.length}
-            commentsCount={0}
-          />
-        ))}
+        {filteredReviews.slice(0, visibleCount).map((review) => {
+          const restaurantImage = review.images?.[0]
+            ? `${process.env.REACT_APP_SERVER_URL}${review.images[0]}`
+            : '';
+
+          return (
+            <ReviewCard
+              key={review._id}
+              id={review._id}
+              username={review.userId?.username || 'Unknown'}
+              userImage={review.userId?.profileImage || ''}
+              restaurantImage={restaurantImage}
+              restaurantName={review.restaurantName}
+              restaurantLocation=""
+              content={review.text}
+              rating={review.rating}
+              likes={Array.isArray(review.likes) ? review.likes.length : review.likesCount || 0}
+              likedByMe={review.likedByMe || false}
+              commentsCount={review.commentsCount || 0}
+              onLike={() => handleLike(review._id)}
+            />
+          );
+        })}
 
         {visibleCount < filteredReviews.length && (
           <Box textAlign="center" mt={3}>

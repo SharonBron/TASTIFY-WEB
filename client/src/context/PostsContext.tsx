@@ -7,13 +7,18 @@ export type Post = {
   rating: number;
   images: string[];
   likes: string[];
+  likesCount?: number; 
   userId: {
     _id: string;
     username: string;
     profileImage: string;
   };
   createdAt: string;
+  commentsCount?: number;
+  likedByMe?: boolean;
 };
+
+
 
 type PostsContextType = {
   posts: Post[];
@@ -24,7 +29,7 @@ const PostsContext = createContext<PostsContextType | undefined>(undefined);
 
 export const usePosts = () => {
   const context = useContext(PostsContext);
-  if (!context) throw new Error('usePosts must be used within PostsProvider');
+  if (!context) throw new Error("usePosts must be used within PostsProvider");
   return context;
 };
 
