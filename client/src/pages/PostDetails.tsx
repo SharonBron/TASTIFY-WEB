@@ -19,25 +19,37 @@ const PostDetails: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const post = location.state?.post;
-  const fullUserImage = post?.userImage?.startsWith('/uploads')
-  ? `${process.env.REACT_APP_SERVER_URL}${post.userImage}`
-  : post?.userImage;
   const userId = localStorage.getItem('userId');
   const token = localStorage.getItem('accessToken');
 
-
+  const fullUserImage = post?.userImage?.startsWith('/uploads')
+    ? `${process.env.REACT_APP_SERVER_URL}${post.userImage}`
+    : post?.userImage;
 
   const [comments, setComments] = useState<any[]>([]);
   const [visibleCount, setVisibleCount] = useState(COMMENTS_PER_PAGE);
   const [newComment, setNewComment] = useState('');
   const [editingCommentId, setEditingCommentId] = useState<string | null>(null);
   const [editedText, setEditedText] = useState('');
-  const [likes, setLikes] = useState(post?.likes ?? 0);
+  const [likes, setLikes] = useState<number>(0);
   const [liked, setLiked] = useState(false);
-  const [currentUser, setCurrentUser] = useState<any>(null);
-
 
   useEffect(() => {
+    const fetchPostDetails = async () => {
+      if (!post?._id) return;
+      try {
+        const res = await axios.get(`${process.env.REACT_APP_API_URL}/posts/${post._id}`, {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        });
+        setLikes(res.data.likesCount);
+        setLiked(res.data.likedByMe);
+      } catch (err) {
+        console.error('❌ Failed to fetch post details:', err);
+      }
+    };
+
     const fetchComments = async () => {
       if (!post?._id) return;
       try {
@@ -48,22 +60,17 @@ const PostDetails: React.FC = () => {
       }
     };
 
+    fetchPostDetails();
     fetchComments();
-  }, [post?._id]);
+  }, [post?._id, token]);
 
   const handleAddComment = async () => {
-    if (!newComment.trim() || !post?._id) {
-      console.warn('⚠️ Cannot send empty comment or missing postId');
-      return;
-    }
-  
+    if (!newComment.trim() || !post?._id) return;
+
     try {
       const res = await axios.post(
         `${process.env.REACT_APP_API_URL}/comments`,
-        {
-          postId: post._id,
-          text: newComment
-        },
+        { postId: post._id, text: newComment },
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -71,8 +78,7 @@ const PostDetails: React.FC = () => {
           }
         }
       );
-  
-      // נבנה תגובה חדשה עם userId מלא מה-localStorage או מתגובה קודמת
+
       const createdComment = {
         ...res.data,
         userId: {
@@ -81,7 +87,7 @@ const PostDetails: React.FC = () => {
           profileImage: localStorage.getItem('profileImage') || ''
         }
       };
-  
+
       setComments(prev => [createdComment, ...prev]);
       setNewComment('');
     } catch (err) {
@@ -89,7 +95,7 @@ const PostDetails: React.FC = () => {
       alert('Failed to post comment');
     }
   };
-  
+
   const handleDeleteComment = async (id: string) => {
     try {
       await axios.delete(`${process.env.REACT_APP_API_URL}/comments/${id}`, {
@@ -108,7 +114,7 @@ const PostDetails: React.FC = () => {
 
   const handleSaveEdit = async () => {
     try {
-      const res = await axios.put(`${process.env.REACT_APP_API_URL}/comments/${editingCommentId}`, {
+      await axios.put(`${process.env.REACT_APP_API_URL}/comments/${editingCommentId}`, {
         text: editedText
       }, {
         headers: { Authorization: `Bearer ${token}` }
@@ -119,7 +125,7 @@ const PostDetails: React.FC = () => {
           c._id === editingCommentId ? { ...c, text: editedText } : c
         )
       );
-      
+
       setEditingCommentId(null);
       setEditedText('');
     } catch (err) {
@@ -127,9 +133,24 @@ const PostDetails: React.FC = () => {
     }
   };
 
-  const toggleLike = () => {
-    setLikes((prev: number) => liked ? prev - 1 : prev + 1);
-    setLiked(!liked);
+  const handleToggleLike = async () => {
+    if (!post?._id) return;
+
+    try {
+      const res = await axios.put(
+        `${process.env.REACT_APP_API_URL}/posts/${post._id}/like`,
+        {},
+        {
+          headers: { Authorization: `Bearer ${token}` }
+        }
+      );
+
+      setLikes(res.data.totalLikes);
+      setLiked(res.data.liked);
+    } catch (err) {
+      console.error('❌ Failed to toggle like:', err);
+      alert('Failed to like the post');
+    }
   };
 
   if (!post) {
@@ -154,7 +175,7 @@ const PostDetails: React.FC = () => {
       <Container sx={{ mt: 2 }}>
         <Paper sx={{ p: 3, borderRadius: 2, mb: 4 }}>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-           <Avatar src={fullUserImage ?? ''} />
+            <Avatar src={fullUserImage ?? ''} />
             <Typography variant="h6">{post.username}</Typography>
           </Box>
 
@@ -167,7 +188,7 @@ const PostDetails: React.FC = () => {
         </Paper>
 
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
-          <IconButton onClick={toggleLike}>
+          <IconButton onClick={handleToggleLike}>
             <FavoriteIcon color={liked ? 'error' : 'disabled'} />
           </IconButton>
           <Typography variant="body2">{likes}</Typography>
@@ -180,48 +201,46 @@ const PostDetails: React.FC = () => {
         <Divider sx={{ mb: 2 }} />
 
         {comments.slice(0, visibleCount).map(comment => {
-  const commenterImage = comment.userId?.profileImage?.startsWith('/uploads')
-    ? `${process.env.REACT_APP_SERVER_URL}${comment.userId.profileImage}`
-    : comment.userId?.profileImage || '';
+          const commenterImage = comment.userId?.profileImage?.startsWith('/uploads')
+            ? `${process.env.REACT_APP_SERVER_URL}${comment.userId.profileImage}`
+            : comment.userId?.profileImage || '';
 
-  return (
-    <Box key={comment._id} sx={{ mb: 2, p: 2, bgcolor: '#f9f9f9', borderRadius: 1 }}>
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-        <Avatar src={commenterImage} />
-        <Typography variant="subtitle2">{comment.userId?.username}</Typography>
-      </Box>
-      <Box sx={{ mt: 1 }}>
-  {editingCommentId === comment._id ? (
-    <>
-      <TextField
-        fullWidth
-        value={editedText}
-        onChange={(e) => setEditedText(e.target.value)}
-        sx={{ mb: 1 }}
-      />
-      <Button onClick={handleSaveEdit} size="small">Save</Button>
-    </>
-  ) : (
-    <>
-      <Typography variant="body2">{comment.text}</Typography>
-
-      {comment.userId?._id === userId && (
-        <Box sx={{ display: 'flex', gap: 1, mt: 1 }}>
-          <IconButton size="small" onClick={() => handleEditComment(comment._id, comment.text)}>
-            <EditIcon fontSize="small" />
-          </IconButton>
-          <IconButton size="small" onClick={() => handleDeleteComment(comment._id)}>
-            <DeleteIcon fontSize="small" />
-          </IconButton>
-        </Box>
-      )}
-    </>
-  )}
-</Box>
-    </Box>
-  );
-})}
-
+          return (
+            <Box key={comment._id} sx={{ mb: 2, p: 2, bgcolor: '#f9f9f9', borderRadius: 1 }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <Avatar src={commenterImage} />
+                <Typography variant="subtitle2">{comment.userId?.username}</Typography>
+              </Box>
+              <Box sx={{ mt: 1 }}>
+                {editingCommentId === comment._id ? (
+                  <>
+                    <TextField
+                      fullWidth
+                      value={editedText}
+                      onChange={(e) => setEditedText(e.target.value)}
+                      sx={{ mb: 1 }}
+                    />
+                    <Button onClick={handleSaveEdit} size="small">Save</Button>
+                  </>
+                ) : (
+                  <>
+                    <Typography variant="body2">{comment.text}</Typography>
+                    {comment.userId?._id === userId && (
+                      <Box sx={{ display: 'flex', gap: 1, mt: 1 }}>
+                        <IconButton size="small" onClick={() => handleEditComment(comment._id, comment.text)}>
+                          <EditIcon fontSize="small" />
+                        </IconButton>
+                        <IconButton size="small" onClick={() => handleDeleteComment(comment._id)}>
+                          <DeleteIcon fontSize="small" />
+                        </IconButton>
+                      </Box>
+                    )}
+                  </>
+                )}
+              </Box>
+            </Box>
+          );
+        })}
 
         {visibleCount < comments.length && (
           <Button onClick={() => setVisibleCount(prev => prev + COMMENTS_PER_PAGE)} variant="text" sx={{ mb: 2 }}>
