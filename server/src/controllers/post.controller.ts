@@ -6,76 +6,77 @@ import mongoose from 'mongoose';
 
 // יצירת פוסט חדש
 export const createPost = async (
-    req: AuthenticatedRequest,
-    res: Response
-  ): Promise<void> => {
-    const { restaurantName, text, rating } = req.body;
-  
-    try {
-      const userId = req.userId;
-      if (!userId) {
-        res.status(401).json({ message: 'Unauthorized' });
-        return;
-      }
-  
-      // קבלת תמונה אם נשלחה
-      const imageUrl = req.file ? `/uploads/${req.file.filename}` : '';
-  
-      const newPost = await Post.create({
-        userId,
-        restaurantName,
-        text,
-        rating,
-        images: imageUrl ? [imageUrl] : []
-      });
-  
-      res.status(201).json(newPost);
-    } catch (err) {
-      console.error('❌ Error creating post:', err);
-      res.status(500).json({ message: 'Server error' });
-    }
-  };
-  
+  req: AuthenticatedRequest,
+  res: Response
+): Promise<void> => {
+  const { restaurantName, text, rating } = req.body;
 
-export const updatePost = async (
-    req: AuthenticatedRequest,
-    res: Response
-  ): Promise<void> => {
-    const { id } = req.params;
-    const { restaurantName, text, rating } = req.body;
-  
-    try {
-      const post = await Post.findById(id);
-      if (!post) {
-        res.status(404).json({ message: 'Post not found' });
-        return;
-      }
-  
-      if (post.userId.toString() !== req.userId) {
-        res.status(403).json({ message: 'You can only edit your own posts' });
-        return;
-      }
-  
-      post.restaurantName = restaurantName || post.restaurantName;
-      post.text = text || post.text;
-      post.rating = rating || post.rating;
-  
-      // עדכון תמונה חדשה אם קיימת בקובץ
-      if (req.file) {
-        const imageUrl = `/uploads/${req.file.filename}`;
-        post.images = [imageUrl];
-      }
-  
-      await post.save();
-      res.status(200).json(post);
-    } catch (err) {
-      console.error('❌ Error updating post:', err);
-      res.status(500).json({ message: 'Server error' });
+  try {
+    const userId = req.userId;
+    if (!userId) {
+      res.status(401).json({ message: 'Unauthorized' });
+      return;
     }
-  };
+
+    const imageUrl = req.file ? `/uploads/${req.file.filename}` : '';
+
+    const newPost = await Post.create({
+      userId,
+      restaurantName,
+      text,
+      rating,
+      images: imageUrl ? [imageUrl] : []
+    });
+
+    res.status(201).json(newPost);
+  } catch (err) {
+    console.error('❌ Error creating post:', err);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
+// עדכון פוסט
+export const updatePost = async (
+  req: AuthenticatedRequest,
+  res: Response
+): Promise<void> => {
+  const { id } = req.params;
+  const { restaurantName, text, rating } = req.body;
+
+  try {
+    const post = await Post.findById(id);
+    if (!post) {
+      res.status(404).json({ message: 'Post not found' });
+      return;
+    }
+
+    if (post.userId.toString() !== req.userId) {
+      res.status(403).json({ message: 'You can only edit your own posts' });
+      return;
+    }
+
+    post.restaurantName = restaurantName || post.restaurantName;
+    post.text = text || post.text;
+    post.rating = rating || post.rating;
+
+    if (req.file) {
+      const imageUrl = `/uploads/${req.file.filename}`;
+      post.images = [imageUrl];
+    }
+
+    await post.save();
+    res.status(200).json({ updatedPost: post });
+  } catch (err) {
+    console.error('❌ Error updating post:', err);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
 
 // מחיקת פוסט
-export const deletePost = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+export const deletePost = async (
+  req: AuthenticatedRequest,
+  res: Response
+): Promise<void> => {
   const { id } = req.params;
 
   try {
@@ -99,7 +100,10 @@ export const deletePost = async (req: AuthenticatedRequest, res: Response): Prom
 };
 
 // קבלת כל הפוסטים
-export const getAllPosts = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+export const getAllPosts = async (
+  req: AuthenticatedRequest,
+  res: Response
+): Promise<void> => {
   try {
     const { restaurant, userId, page = '1', limit = '10' } = req.query;
 
@@ -149,12 +153,11 @@ export const getAllPosts = async (req: AuthenticatedRequest, res: Response): Pro
         $project: {
           comments: 0,
           likes: 0,
-          'user.password': 0 // הסתרת סיסמה אם יש
+          'user.password': 0
         }
       }
     ]);
 
-    // Get total count (without pagination)
     const total = await Post.countDocuments(matchStage);
 
     res.status(200).json({
@@ -169,90 +172,85 @@ export const getAllPosts = async (req: AuthenticatedRequest, res: Response): Pro
   }
 };
 
+// לייק לפוסט
+export const toggleLikePost = async (
+  req: AuthenticatedRequest,
+  res: Response
+): Promise<void> => {
+  const { id } = req.params;
+  const userId = req.userId;
 
-  export const toggleLikePost = async (
-    req: AuthenticatedRequest,
-    res: Response
-  ): Promise<void> => {
-    const { id } = req.params;
-    const userId = req.userId;
-  
-    if (!userId) {
-      res.status(401).json({ message: 'Unauthorized – userId missing from token' });
+  if (!userId) {
+    res.status(401).json({ message: 'Unauthorized – userId missing from token' });
+    return;
+  }
+
+  const userObjectId = new mongoose.Types.ObjectId(userId);
+
+  try {
+    const post = await Post.findById(id);
+    if (!post) {
+      res.status(404).json({ message: 'Post not found' });
       return;
     }
-  
-    const userObjectId = new mongoose.Types.ObjectId(userId);
-  
-    try {
-      const post = await Post.findById(id);
-      if (!post) {
-        res.status(404).json({ message: 'Post not found' });
-        return;
-      }
-  
-      const alreadyLiked = post.likes.some(likeId =>
-        likeId.toString() === userObjectId.toString()
+
+    const alreadyLiked = post.likes.some(
+      (likeId) => likeId.toString() === userObjectId.toString()
+    );
+
+    if (alreadyLiked) {
+      post.likes = post.likes.filter(
+        (likeId) => likeId.toString() !== userObjectId.toString()
       );
-  
-      if (alreadyLiked) {
-        post.likes = post.likes.filter(
-          likeId => likeId.toString() !== userObjectId.toString()
-        );
-      } else {
-        post.likes.push(userObjectId);
-      }
-  
-      await post.save();
-  
-      res.status(200).json({
-        liked: !alreadyLiked,
-        totalLikes: post.likes.length
-      });
-    } catch (err) {
-      console.error('❌ Error toggling like:', err);
-      res.status(500).json({ message: 'Server error' });
+    } else {
+      post.likes.push(userObjectId);
     }
-  };
-  
 
-  // קבלת פוסט ספציפי
-  export const getPostDetails = async (
-    req: AuthenticatedRequest,
-    res: Response
-  ): Promise<void> => {
-    const { id } = req.params;
-    const userId = req.userId;
-  
-    try {
-      const post = await Post.findById(id)
-        .populate('userId', 'username profileImage');
-  
-      if (!post) {
-        res.status(404).json({ message: 'Post not found' });
-        return;
-      }
-  
-      const comments = await Comment.find({ postId: id })
-        .sort({ createdAt: -1 })
-        .populate('userId', 'username profileImage');
-  
-      const likedByMe = userId
-        ? post.likes.some(
-            (likeId) => likeId.toString() === userId.toString()
-          )
-        : false;
-  
-      res.status(200).json({
-        post,
-        comments,
-        likesCount: post.likes.length,
-        commentsCount: comments.length,
-        likedByMe
-      });
-    } catch (err) {
-      console.error('❌ Error getting post details:', err);
-      res.status(500).json({ message: 'Server error' });
+    await post.save();
+
+    res.status(200).json({
+      liked: !alreadyLiked,
+      totalLikes: post.likes.length
+    });
+  } catch (err) {
+    console.error('❌ Error toggling like:', err);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
+// פרטי פוסט
+export const getPostDetails = async (
+  req: AuthenticatedRequest,
+  res: Response
+): Promise<void> => {
+  const { id } = req.params;
+  const userId = req.userId;
+
+  try {
+    const post = await Post.findById(id).populate('userId', 'username profileImage');
+
+    if (!post) {
+      res.status(404).json({ message: 'Post not found' });
+      return;
     }
-  };
 
+    const comments = await Comment.find({ postId: id })
+      .sort({ createdAt: -1 })
+      .populate('userId', 'username profileImage');
+
+    const likedByMe = userId
+      ? post.likes.some((likeId) => likeId.toString() === userId.toString())
+      : false;
+
+    res.status(200).json({
+      post,
+      comments,
+      likesCount: post.likes.length,
+      commentsCount: comments.length,
+      likedByMe
+    });
+  } catch (err) {
+    console.error('❌ Error getting post details:', err);
+    res.status(500).json({ message: 'Server error' });
+  }
+};

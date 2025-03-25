@@ -16,10 +16,10 @@ const router = express_1.default.Router();
  */
 /**
  * @swagger
- * /api/auth/register:
+ * /api/users/create:
  *   post:
- *     summary: Register a new user
- *     tags: [Auth]
+ *     summary: Create a user manually (for testing or admin purposes)
+ *     tags: [Users]
  *     requestBody:
  *       required: true
  *       content:
@@ -45,18 +45,9 @@ const router = express_1.default.Router();
  *                 type: string
  *     responses:
  *       201:
- *         description: User created successfully
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 accessToken:
- *                   type: string
- *                 refreshToken:
- *                   type: string
+ *         description: User created
  *       400:
- *         description: User already exists or validation failed
+ *         description: User already exists
  */
 router.post('/create', user_controller_1.createUser);
 /**

@@ -25,7 +25,6 @@ const createPost = (req, res) => __awaiter(void 0, void 0, void 0, function* () 
             res.status(401).json({ message: 'Unauthorized' });
             return;
         }
-        // קבלת תמונה אם נשלחה
         const imageUrl = req.file ? `/uploads/${req.file.filename}` : '';
         const newPost = yield Post_1.default.create({
             userId,
@@ -42,6 +41,7 @@ const createPost = (req, res) => __awaiter(void 0, void 0, void 0, function* () 
     }
 });
 exports.createPost = createPost;
+// עדכון פוסט
 const updatePost = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const { id } = req.params;
     const { restaurantName, text, rating } = req.body;
@@ -58,13 +58,12 @@ const updatePost = (req, res) => __awaiter(void 0, void 0, void 0, function* () 
         post.restaurantName = restaurantName || post.restaurantName;
         post.text = text || post.text;
         post.rating = rating || post.rating;
-        // עדכון תמונה חדשה אם קיימת בקובץ
         if (req.file) {
             const imageUrl = `/uploads/${req.file.filename}`;
             post.images = [imageUrl];
         }
         yield post.save();
-        res.status(200).json(post);
+        res.status(200).json({ updatedPost: post });
     }
     catch (err) {
         console.error('❌ Error updating post:', err);
@@ -140,11 +139,10 @@ const getAllPosts = (req, res) => __awaiter(void 0, void 0, void 0, function* ()
                 $project: {
                     comments: 0,
                     likes: 0,
-                    'user.password': 0 // הסתרת סיסמה אם יש
+                    'user.password': 0
                 }
             }
         ]);
-        // Get total count (without pagination)
         const total = yield Post_1.default.countDocuments(matchStage);
         res.status(200).json({
             posts,
@@ -159,6 +157,7 @@ const getAllPosts = (req, res) => __awaiter(void 0, void 0, void 0, function* ()
     }
 });
 exports.getAllPosts = getAllPosts;
+// לייק לפוסט
 const toggleLikePost = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const { id } = req.params;
     const userId = req.userId;
@@ -173,9 +172,9 @@ const toggleLikePost = (req, res) => __awaiter(void 0, void 0, void 0, function*
             res.status(404).json({ message: 'Post not found' });
             return;
         }
-        const alreadyLiked = post.likes.some(likeId => likeId.toString() === userObjectId.toString());
+        const alreadyLiked = post.likes.some((likeId) => likeId.toString() === userObjectId.toString());
         if (alreadyLiked) {
-            post.likes = post.likes.filter(likeId => likeId.toString() !== userObjectId.toString());
+            post.likes = post.likes.filter((likeId) => likeId.toString() !== userObjectId.toString());
         }
         else {
             post.likes.push(userObjectId);
@@ -192,13 +191,12 @@ const toggleLikePost = (req, res) => __awaiter(void 0, void 0, void 0, function*
     }
 });
 exports.toggleLikePost = toggleLikePost;
-// קבלת פוסט ספציפי
+// פרטי פוסט
 const getPostDetails = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const { id } = req.params;
     const userId = req.userId;
     try {
-        const post = yield Post_1.default.findById(id)
-            .populate('userId', 'username profileImage');
+        const post = yield Post_1.default.findById(id).populate('userId', 'username profileImage');
         if (!post) {
             res.status(404).json({ message: 'Post not found' });
             return;

@@ -56,14 +56,14 @@ router.get('/', getAllPosts);
  * @swagger
  * /api/posts:
  *   post:
- *     summary: Create a new post (without image)
+ *     summary: Create a new post
  *     tags: [Posts]
  *     security:
  *       - bearerAuth: []
  *     requestBody:
  *       required: true
  *       content:
- *         application/json:
+ *         multipart/form-data:
  *           schema:
  *             type: object
  *             required:
@@ -77,9 +77,14 @@ router.get('/', getAllPosts);
  *                 type: string
  *               rating:
  *                 type: number
+ *               image:
+ *                 type: string
+ *                 format: binary
  *     responses:
  *       201:
  *         description: Post created successfully
+ *     description: |
+ *       The post will be associated with the authenticated user (userId is taken from the bearer token).
  */
 router.post(
     '/',
