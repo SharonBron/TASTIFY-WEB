@@ -26,6 +26,8 @@ const router = express.Router();
  *               - username
  *               - email
  *               - password
+ *               - firstName
+ *               - lastName
  *             properties:
  *               username:
  *                 type: string
@@ -33,12 +35,26 @@ const router = express.Router();
  *                 type: string
  *               password:
  *                 type: string
+ *               firstName:
+ *                 type: string
+ *               lastName:
+ *                 type: string
  *     responses:
  *       201:
  *         description: User created successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 accessToken:
+ *                   type: string
+ *                 refreshToken:
+ *                   type: string
  *       400:
- *         description: User already exists
+ *         description: User already exists or validation failed
  */
+
 router.post('/register', register);
 
 /**
@@ -64,9 +80,19 @@ router.post('/register', register);
  *     responses:
  *       200:
  *         description: Successful login
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 accessToken:
+ *                   type: string
+ *                 refreshToken:
+ *                   type: string
  *       400:
  *         description: Invalid credentials
  */
+
 router.post('/login', login);
 
 /**

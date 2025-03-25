@@ -10,9 +10,14 @@ const options: swaggerJSDoc.Options = {
     },
     servers: [
       {
-        url: 'http://localhost:5000',
+        url: 'http://10.10.246.110',
         description: 'Local dev server'
-      }
+      },
+      {
+        url: 'https://10.10.246.110',
+        description: 'prod server'
+      },
+
     ]
   },
   apis: ['./src/routes/*.ts'], 

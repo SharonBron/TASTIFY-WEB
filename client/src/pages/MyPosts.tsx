@@ -29,6 +29,8 @@ const MyPosts: React.FC = () => {
   const [selectedRating, setSelectedRating] = useState<number | null>(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [selectedPost, setSelectedPost] = useState<any>(null);
+  const [imageUrl, setImageUrl] = useState<string | null>(null); // לא defaultValues
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
 
 
   useEffect(() => {
@@ -89,38 +91,72 @@ const MyPosts: React.FC = () => {
     }
   };
 
+const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setSelectedFile(file);
+      const previewUrl = URL.createObjectURL(file);
+      setImageUrl(previewUrl);
+    }
+  };
+
+
   const handleEdit = (post: any) => {
     setSelectedPost(post);
+    setImageUrl(
+      post.images?.[0]
+        ? `${process.env.REACT_APP_SERVER_URL}${post.images[0]}`
+        : null
+    );
+    setSelectedFile(null); // איפוס
     setIsEditModalOpen(true);
   };
 
-  const handleUpdate = (updatedData: {
+  const handleUpdate = async (updatedData: {
     content: string;
     rating: number;
-    imageUrl?: string;
     restaurantName: string;
   }) => {
     if (!selectedPost) return;
-
-    setPosts(prev =>
-      prev.map(post =>
-        post._id === selectedPost._id
-          ? {
-              ...post,
-              text: updatedData.content,
-              rating: updatedData.rating,
-              images: updatedData.imageUrl
-                ? [updatedData.imageUrl.replace(process.env.REACT_APP_SERVER_URL || '', '')]
-                : post.images,
-              restaurantName: updatedData.restaurantName,
-            }
-          : post
-      )
-    );
-
-    setIsEditModalOpen(false);
-    setSelectedPost(null);
+  
+    try {
+      const token = localStorage.getItem('accessToken');
+      const formData = new FormData();
+      formData.append('text', updatedData.content);
+      formData.append('rating', updatedData.rating.toString());
+      formData.append('restaurantName', updatedData.restaurantName);
+  
+      if (selectedFile) {
+        formData.append('image', selectedFile); // חשוב שזה יתאים לשם בצד השרת
+      }
+  
+      const res = await axios.put(
+        `${process.env.REACT_APP_API_URL}/posts/${selectedPost._id}`,
+        formData,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'multipart/form-data',
+          },
+        }
+      );
+  
+      const updatedPost = res.data.updatedPost;
+  
+      setPosts(prev =>
+        prev.map(post => (post._id === selectedPost._id ? updatedPost : post))
+      );
+  
+      setIsEditModalOpen(false);
+      setSelectedPost(null);
+      setSelectedFile(null);
+      setImageUrl(null);
+    } catch (err) {
+      console.error('❌ Failed to update post:', err);
+      alert('Failed to update post.');
+    }
   };
+  
 
   const handleLike = async (postId: string) => {
     try {

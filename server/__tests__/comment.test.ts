@@ -1,4 +1,5 @@
-
+import dotenv from 'dotenv';
+dotenv.config({ path: '.env_test' });
 import request from 'supertest';
 import mongoose from 'mongoose';
 import app from '../src/index';

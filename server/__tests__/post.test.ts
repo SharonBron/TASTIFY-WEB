@@ -1,10 +1,13 @@
 import request from 'supertest';
+import dotenv from 'dotenv';
+dotenv.config({ path: '.env_test' });
 import mongoose from 'mongoose';
 import jwt from 'jsonwebtoken';
 import app from '../src/index';
 
 let token: string;
 let userId: string;
+
 
 const userData = {
   username: `PostUser${Date.now()}`,
@@ -15,6 +18,9 @@ const userData = {
 };
 
 beforeAll(async () => {
+  if(!process.env.MONGO_URI){
+    throw new Error("MONGO_URI not set")
+  }
   await mongoose.connect(process.env.MONGO_URI!);
 });
 

@@ -59,7 +59,7 @@ const AddReviewModal: React.FC<Props> = ({ open, onClose, onSubmit, defaultValue
     onSubmit({
       content,
       rating,
-      imageUrl: imageUrl || undefined,
+      imageUrl: imageUrl || '',
       restaurantName,
     });
 

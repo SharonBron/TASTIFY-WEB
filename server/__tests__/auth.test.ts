@@ -1,4 +1,6 @@
 import request from 'supertest';
+import dotenv from 'dotenv';
+dotenv.config({ path: '.env_test' });
 import mongoose from 'mongoose';
 import app from '../src/index'; // ודאי שבקובץ index.ts את עושה export ל־app
 
